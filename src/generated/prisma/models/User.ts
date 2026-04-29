@@ -34,6 +34,8 @@ export type UserMinAggregateOutputType = {
   pub_key: string | null
   priv_key_enc_1: string | null
   priv_key_enc_2: string | null
+  totpSecret: string | null
+  totpEnabled: boolean | null
 }
 
 export type UserMaxAggregateOutputType = {
@@ -46,6 +48,8 @@ export type UserMaxAggregateOutputType = {
   pub_key: string | null
   priv_key_enc_1: string | null
   priv_key_enc_2: string | null
+  totpSecret: string | null
+  totpEnabled: boolean | null
 }
 
 export type UserCountAggregateOutputType = {
@@ -58,6 +62,8 @@ export type UserCountAggregateOutputType = {
   pub_key: number
   priv_key_enc_1: number
   priv_key_enc_2: number
+  totpSecret: number
+  totpEnabled: number
   _all: number
 }
 
@@ -72,6 +78,8 @@ export type UserMinAggregateInputType = {
   pub_key?: true
   priv_key_enc_1?: true
   priv_key_enc_2?: true
+  totpSecret?: true
+  totpEnabled?: true
 }
 
 export type UserMaxAggregateInputType = {
@@ -84,6 +92,8 @@ export type UserMaxAggregateInputType = {
   pub_key?: true
   priv_key_enc_1?: true
   priv_key_enc_2?: true
+  totpSecret?: true
+  totpEnabled?: true
 }
 
 export type UserCountAggregateInputType = {
@@ -96,6 +106,8 @@ export type UserCountAggregateInputType = {
   pub_key?: true
   priv_key_enc_1?: true
   priv_key_enc_2?: true
+  totpSecret?: true
+  totpEnabled?: true
   _all?: true
 }
 
@@ -175,12 +187,14 @@ export type UserGroupByOutputType = {
   id: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash: string | null
+  salt_mp: string | null
+  salt_rc: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret: string | null
+  totpEnabled: boolean
   _count: UserCountAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
@@ -208,12 +222,15 @@ export type UserWhereInput = {
   id?: Prisma.StringFilter<"User"> | string
   email?: Prisma.StringFilter<"User"> | string
   username?: Prisma.StringFilter<"User"> | string
-  auth_hash?: Prisma.StringFilter<"User"> | string
-  salt_mp?: Prisma.StringFilter<"User"> | string
-  salt_rc?: Prisma.StringFilter<"User"> | string
+  auth_hash?: Prisma.StringNullableFilter<"User"> | string | null
+  salt_mp?: Prisma.StringNullableFilter<"User"> | string | null
+  salt_rc?: Prisma.StringNullableFilter<"User"> | string | null
   pub_key?: Prisma.StringFilter<"User"> | string
   priv_key_enc_1?: Prisma.StringFilter<"User"> | string
   priv_key_enc_2?: Prisma.StringFilter<"User"> | string
+  totpSecret?: Prisma.StringNullableFilter<"User"> | string | null
+  totpEnabled?: Prisma.BoolFilter<"User"> | boolean
+  oidcConnections?: Prisma.OidcConnectionListRelationFilter
   userTree?: Prisma.XOR<Prisma.UserTreeNullableScalarRelationFilter, Prisma.UserTreeWhereInput> | null
   files?: Prisma.FileListRelationFilter
   permissions?: Prisma.FilePermissionListRelationFilter
@@ -225,12 +242,15 @@ export type UserOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   username?: Prisma.SortOrder
-  auth_hash?: Prisma.SortOrder
-  salt_mp?: Prisma.SortOrder
-  salt_rc?: Prisma.SortOrder
+  auth_hash?: Prisma.SortOrderInput | Prisma.SortOrder
+  salt_mp?: Prisma.SortOrderInput | Prisma.SortOrder
+  salt_rc?: Prisma.SortOrderInput | Prisma.SortOrder
   pub_key?: Prisma.SortOrder
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
+  totpSecret?: Prisma.SortOrderInput | Prisma.SortOrder
+  totpEnabled?: Prisma.SortOrder
+  oidcConnections?: Prisma.OidcConnectionOrderByRelationAggregateInput
   userTree?: Prisma.UserTreeOrderByWithRelationInput
   files?: Prisma.FileOrderByRelationAggregateInput
   permissions?: Prisma.FilePermissionOrderByRelationAggregateInput
@@ -248,9 +268,12 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
-  auth_hash?: Prisma.StringFilter<"User"> | string
-  salt_mp?: Prisma.StringFilter<"User"> | string
-  salt_rc?: Prisma.StringFilter<"User"> | string
+  auth_hash?: Prisma.StringNullableFilter<"User"> | string | null
+  salt_mp?: Prisma.StringNullableFilter<"User"> | string | null
+  salt_rc?: Prisma.StringNullableFilter<"User"> | string | null
+  totpSecret?: Prisma.StringNullableFilter<"User"> | string | null
+  totpEnabled?: Prisma.BoolFilter<"User"> | boolean
+  oidcConnections?: Prisma.OidcConnectionListRelationFilter
   userTree?: Prisma.XOR<Prisma.UserTreeNullableScalarRelationFilter, Prisma.UserTreeWhereInput> | null
   files?: Prisma.FileListRelationFilter
   permissions?: Prisma.FilePermissionListRelationFilter
@@ -262,12 +285,14 @@ export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   username?: Prisma.SortOrder
-  auth_hash?: Prisma.SortOrder
-  salt_mp?: Prisma.SortOrder
-  salt_rc?: Prisma.SortOrder
+  auth_hash?: Prisma.SortOrderInput | Prisma.SortOrder
+  salt_mp?: Prisma.SortOrderInput | Prisma.SortOrder
+  salt_rc?: Prisma.SortOrderInput | Prisma.SortOrder
   pub_key?: Prisma.SortOrder
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
+  totpSecret?: Prisma.SortOrderInput | Prisma.SortOrder
+  totpEnabled?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
   _min?: Prisma.UserMinOrderByAggregateInput
@@ -280,24 +305,29 @@ export type UserScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"User"> | string
   email?: Prisma.StringWithAggregatesFilter<"User"> | string
   username?: Prisma.StringWithAggregatesFilter<"User"> | string
-  auth_hash?: Prisma.StringWithAggregatesFilter<"User"> | string
-  salt_mp?: Prisma.StringWithAggregatesFilter<"User"> | string
-  salt_rc?: Prisma.StringWithAggregatesFilter<"User"> | string
+  auth_hash?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  salt_mp?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  salt_rc?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   pub_key?: Prisma.StringWithAggregatesFilter<"User"> | string
   priv_key_enc_1?: Prisma.StringWithAggregatesFilter<"User"> | string
   priv_key_enc_2?: Prisma.StringWithAggregatesFilter<"User"> | string
+  totpSecret?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  totpEnabled?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
 }
 
 export type UserCreateInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
@@ -309,12 +339,15 @@ export type UserUncheckedCreateInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
@@ -326,12 +359,15 @@ export type UserUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
@@ -343,12 +379,15 @@ export type UserUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
@@ -360,36 +399,42 @@ export type UserCreateManyInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
 }
 
 export type UserUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type UserUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
 export type UserCountOrderByAggregateInput = {
@@ -402,6 +447,8 @@ export type UserCountOrderByAggregateInput = {
   pub_key?: Prisma.SortOrder
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
+  totpSecret?: Prisma.SortOrder
+  totpEnabled?: Prisma.SortOrder
 }
 
 export type UserMaxOrderByAggregateInput = {
@@ -414,6 +461,8 @@ export type UserMaxOrderByAggregateInput = {
   pub_key?: Prisma.SortOrder
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
+  totpSecret?: Prisma.SortOrder
+  totpEnabled?: Prisma.SortOrder
 }
 
 export type UserMinOrderByAggregateInput = {
@@ -426,6 +475,8 @@ export type UserMinOrderByAggregateInput = {
   pub_key?: Prisma.SortOrder
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
+  totpSecret?: Prisma.SortOrder
+  totpEnabled?: Prisma.SortOrder
 }
 
 export type UserScalarRelationFilter = {
@@ -435,6 +486,28 @@ export type UserScalarRelationFilter = {
 
 export type StringFieldUpdateOperationsInput = {
   set?: string
+}
+
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
+export type BoolFieldUpdateOperationsInput = {
+  set?: boolean
+}
+
+export type UserCreateNestedOneWithoutOidcConnectionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutOidcConnectionsInput, Prisma.UserUncheckedCreateWithoutOidcConnectionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOidcConnectionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutOidcConnectionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutOidcConnectionsInput, Prisma.UserUncheckedCreateWithoutOidcConnectionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutOidcConnectionsInput
+  upsert?: Prisma.UserUpsertWithoutOidcConnectionsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutOidcConnectionsInput, Prisma.UserUpdateWithoutOidcConnectionsInput>, Prisma.UserUncheckedUpdateWithoutOidcConnectionsInput>
 }
 
 export type UserCreateNestedOneWithoutUserTreeInput = {
@@ -507,16 +580,111 @@ export type UserUpdateOneRequiredWithoutEditedVersionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutEditedVersionsInput, Prisma.UserUpdateWithoutEditedVersionsInput>, Prisma.UserUncheckedUpdateWithoutEditedVersionsInput>
 }
 
+export type UserCreateWithoutOidcConnectionsInput = {
+  id?: string
+  email: string
+  username: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
+  pub_key: string
+  priv_key_enc_1: string
+  priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutOwnerInput
+  permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
+  grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
+  editedVersions?: Prisma.FileVersionCreateNestedManyWithoutEditorInput
+}
+
+export type UserUncheckedCreateWithoutOidcConnectionsInput = {
+  id?: string
+  email: string
+  username: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
+  pub_key: string
+  priv_key_enc_1: string
+  priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
+  permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
+  grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
+  editedVersions?: Prisma.FileVersionUncheckedCreateNestedManyWithoutEditorInput
+}
+
+export type UserCreateOrConnectWithoutOidcConnectionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutOidcConnectionsInput, Prisma.UserUncheckedCreateWithoutOidcConnectionsInput>
+}
+
+export type UserUpsertWithoutOidcConnectionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutOidcConnectionsInput, Prisma.UserUncheckedUpdateWithoutOidcConnectionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutOidcConnectionsInput, Prisma.UserUncheckedCreateWithoutOidcConnectionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutOidcConnectionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutOidcConnectionsInput, Prisma.UserUncheckedUpdateWithoutOidcConnectionsInput>
+}
+
+export type UserUpdateWithoutOidcConnectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pub_key?: Prisma.StringFieldUpdateOperationsInput | string
+  priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
+  priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
+  permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
+  grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
+  editedVersions?: Prisma.FileVersionUpdateManyWithoutEditorNestedInput
+}
+
+export type UserUncheckedUpdateWithoutOidcConnectionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pub_key?: Prisma.StringFieldUpdateOperationsInput | string
+  priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
+  priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
+  permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
+  grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
+  editedVersions?: Prisma.FileVersionUncheckedUpdateManyWithoutEditorNestedInput
+}
+
 export type UserCreateWithoutUserTreeInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
@@ -527,12 +695,15 @@ export type UserUncheckedCreateWithoutUserTreeInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
@@ -559,12 +730,15 @@ export type UserUpdateWithoutUserTreeInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
@@ -575,12 +749,15 @@ export type UserUncheckedUpdateWithoutUserTreeInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
@@ -591,12 +768,15 @@ export type UserCreateWithoutFilesInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
@@ -607,12 +787,15 @@ export type UserUncheckedCreateWithoutFilesInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
@@ -639,12 +822,15 @@ export type UserUpdateWithoutFilesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
@@ -655,12 +841,15 @@ export type UserUncheckedUpdateWithoutFilesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
@@ -671,12 +860,15 @@ export type UserCreateWithoutPermissionsInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
@@ -687,12 +879,15 @@ export type UserUncheckedCreateWithoutPermissionsInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
@@ -708,12 +903,15 @@ export type UserCreateWithoutGrantedPermsInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
@@ -724,12 +922,15 @@ export type UserUncheckedCreateWithoutGrantedPermsInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
@@ -756,12 +957,15 @@ export type UserUpdateWithoutPermissionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
@@ -772,12 +976,15 @@ export type UserUncheckedUpdateWithoutPermissionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
@@ -799,12 +1006,15 @@ export type UserUpdateWithoutGrantedPermsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
@@ -815,12 +1025,15 @@ export type UserUncheckedUpdateWithoutGrantedPermsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
@@ -831,12 +1044,15 @@ export type UserCreateWithoutEditedVersionsInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
@@ -847,12 +1063,15 @@ export type UserUncheckedCreateWithoutEditedVersionsInput = {
   id?: string
   email: string
   username: string
-  auth_hash: string
-  salt_mp: string
-  salt_rc: string
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
   pub_key: string
   priv_key_enc_1: string
   priv_key_enc_2: string
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
@@ -879,12 +1098,15 @@ export type UserUpdateWithoutEditedVersionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
@@ -895,12 +1117,15 @@ export type UserUncheckedUpdateWithoutEditedVersionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.StringFieldUpdateOperationsInput | string
   username?: Prisma.StringFieldUpdateOperationsInput | string
-  auth_hash?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_mp?: Prisma.StringFieldUpdateOperationsInput | string
-  salt_rc?: Prisma.StringFieldUpdateOperationsInput | string
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pub_key?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
@@ -913,6 +1138,7 @@ export type UserUncheckedUpdateWithoutEditedVersionsInput = {
  */
 
 export type UserCountOutputType = {
+  oidcConnections: number
   files: number
   permissions: number
   grantedPerms: number
@@ -920,6 +1146,7 @@ export type UserCountOutputType = {
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  oidcConnections?: boolean | UserCountOutputTypeCountOidcConnectionsArgs
   files?: boolean | UserCountOutputTypeCountFilesArgs
   permissions?: boolean | UserCountOutputTypeCountPermissionsArgs
   grantedPerms?: boolean | UserCountOutputTypeCountGrantedPermsArgs
@@ -934,6 +1161,13 @@ export type UserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
    * Select specific fields to fetch from the UserCountOutputType
    */
   select?: Prisma.UserCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountOidcConnectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.OidcConnectionWhereInput
 }
 
 /**
@@ -975,6 +1209,9 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   pub_key?: boolean
   priv_key_enc_1?: boolean
   priv_key_enc_2?: boolean
+  totpSecret?: boolean
+  totpEnabled?: boolean
+  oidcConnections?: boolean | Prisma.User$oidcConnectionsArgs<ExtArgs>
   userTree?: boolean | Prisma.User$userTreeArgs<ExtArgs>
   files?: boolean | Prisma.User$filesArgs<ExtArgs>
   permissions?: boolean | Prisma.User$permissionsArgs<ExtArgs>
@@ -993,6 +1230,8 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   pub_key?: boolean
   priv_key_enc_1?: boolean
   priv_key_enc_2?: boolean
+  totpSecret?: boolean
+  totpEnabled?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1005,6 +1244,8 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   pub_key?: boolean
   priv_key_enc_1?: boolean
   priv_key_enc_2?: boolean
+  totpSecret?: boolean
+  totpEnabled?: boolean
 }, ExtArgs["result"]["user"]>
 
 export type UserSelectScalar = {
@@ -1017,10 +1258,13 @@ export type UserSelectScalar = {
   pub_key?: boolean
   priv_key_enc_1?: boolean
   priv_key_enc_2?: boolean
+  totpSecret?: boolean
+  totpEnabled?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "username" | "auth_hash" | "salt_mp" | "salt_rc" | "pub_key" | "priv_key_enc_1" | "priv_key_enc_2", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "username" | "auth_hash" | "salt_mp" | "salt_rc" | "pub_key" | "priv_key_enc_1" | "priv_key_enc_2" | "totpSecret" | "totpEnabled", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  oidcConnections?: boolean | Prisma.User$oidcConnectionsArgs<ExtArgs>
   userTree?: boolean | Prisma.User$userTreeArgs<ExtArgs>
   files?: boolean | Prisma.User$filesArgs<ExtArgs>
   permissions?: boolean | Prisma.User$permissionsArgs<ExtArgs>
@@ -1034,6 +1278,7 @@ export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
   objects: {
+    oidcConnections: Prisma.$OidcConnectionPayload<ExtArgs>[]
     userTree: Prisma.$UserTreePayload<ExtArgs> | null
     files: Prisma.$FilePayload<ExtArgs>[]
     permissions: Prisma.$FilePermissionPayload<ExtArgs>[]
@@ -1044,12 +1289,14 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     id: string
     email: string
     username: string
-    auth_hash: string
-    salt_mp: string
-    salt_rc: string
+    auth_hash: string | null
+    salt_mp: string | null
+    salt_rc: string | null
     pub_key: string
     priv_key_enc_1: string
     priv_key_enc_2: string
+    totpSecret: string | null
+    totpEnabled: boolean
   }, ExtArgs["result"]["user"]>
   composites: {}
 }
@@ -1444,6 +1691,7 @@ readonly fields: UserFieldRefs;
  */
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  oidcConnections<T extends Prisma.User$oidcConnectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$oidcConnectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$OidcConnectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   userTree<T extends Prisma.User$userTreeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$userTreeArgs<ExtArgs>>): Prisma.Prisma__UserTreeClient<runtime.Types.Result.GetResult<Prisma.$UserTreePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   files<T extends Prisma.User$filesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$filesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   permissions<T extends Prisma.User$permissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$permissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FilePermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -1487,6 +1735,8 @@ export interface UserFieldRefs {
   readonly pub_key: Prisma.FieldRef<"User", 'String'>
   readonly priv_key_enc_1: Prisma.FieldRef<"User", 'String'>
   readonly priv_key_enc_2: Prisma.FieldRef<"User", 'String'>
+  readonly totpSecret: Prisma.FieldRef<"User", 'String'>
+  readonly totpEnabled: Prisma.FieldRef<"User", 'Boolean'>
 }
     
 
@@ -1877,6 +2127,30 @@ export type UserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Users to delete.
    */
   limit?: number
+}
+
+/**
+ * User.oidcConnections
+ */
+export type User$oidcConnectionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the OidcConnection
+   */
+  select?: Prisma.OidcConnectionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the OidcConnection
+   */
+  omit?: Prisma.OidcConnectionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.OidcConnectionInclude<ExtArgs> | null
+  where?: Prisma.OidcConnectionWhereInput
+  orderBy?: Prisma.OidcConnectionOrderByWithRelationInput | Prisma.OidcConnectionOrderByWithRelationInput[]
+  cursor?: Prisma.OidcConnectionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.OidcConnectionScalarFieldEnum | Prisma.OidcConnectionScalarFieldEnum[]
 }
 
 /**
