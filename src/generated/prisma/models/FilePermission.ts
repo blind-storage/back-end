@@ -519,10 +519,6 @@ export type FilePermissionUncheckedUpdateManyWithoutFileNestedInput = {
   deleteMany?: Prisma.FilePermissionScalarWhereInput | Prisma.FilePermissionScalarWhereInput[]
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type FilePermissionCreateWithoutUserInput = {
   id?: string
   enc_fek: string

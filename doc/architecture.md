@@ -14,7 +14,7 @@ L'architecture est pensée pour séparer la gestion des métadonnées/clés publ
 
 La sécurité repose sur une combinaison de cryptographie symétrique (pour la performance) et asymétrique à clé publique (pour le partage et la gestion des identités).
 
-1. **Chiffrement des Fichiers :** Chaque fichier est chiffré avec l'algorithme **AES-GCM** à l'aide d'une clé symétrique unique appelée **FEK** (File Encryption Key), générée côté client à chaque upload.
+1. **Chiffrement des Fichiers :** Chaque fichier est chiffré avec l'algorithme **AES-GCM** à l'aide d'une clé symétrique unique appelée **FEK** (File Encryption Key), générée côté client à chaque upload.639563V
 2. **Stockage de la FEK (chiffrement asymétrique par destinataire) :** La FEK n'est jamais stockée en clair. Pour chaque utilisateur ayant accès au fichier, une entrée `FilePermission` est créée en base contenant la FEK chiffrée avec la **clé publique** de cet utilisateur (`enc_fek`). Seul le détenteur de la clé privée correspondante peut déchiffrer sa propre `enc_fek` pour retrouver la FEK.
 3. **Partage de Fichier :** Pour partager un fichier, le propriétaire :
    - Déchiffre sa propre `enc_fek` avec sa clé privée pour obtenir la FEK en clair.

@@ -23,6 +23,16 @@ export * from './enums.js';
  */
 export type User = Prisma.UserModel
 /**
+ * Model TotpRecoveryCode
+ * 
+ */
+export type TotpRecoveryCode = Prisma.TotpRecoveryCodeModel
+/**
+ * Model OidcConnection
+ * 
+ */
+export type OidcConnection = Prisma.OidcConnectionModel
+/**
  * Model UserTree
  * 
  */

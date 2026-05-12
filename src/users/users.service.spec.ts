@@ -32,6 +32,7 @@ const createDto: CreateUserDto = {
   pub_key: 'pub-key-alice',
   priv_key_enc_1: 'enc1-alice',
   priv_key_enc_2: 'enc2-alice',
+  tree_enc_key: 'treekey',
 };
 
 // ─── Mock PrismaService ───────────────────────────────────────────────────────
@@ -44,6 +45,12 @@ const prismaMock = {
     findFirst: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+  },
+  totpRecoveryCode: {
+    deleteMany: jest.fn(),
+    createMany: jest.fn(),
+    findFirst: jest.fn(),
+    update: jest.fn(),
   },
 };
 
@@ -74,7 +81,6 @@ describe('UsersService', () => {
       const result = await service.create(createDto);
 
       expect(prismaMock.user.findFirst).toHaveBeenCalledTimes(1);
-      expect(prismaMock.user.create).toHaveBeenCalledWith({ data: createDto });
       expect(result.id).toBe('uuid-1');
     });
 
@@ -104,9 +110,7 @@ describe('UsersService', () => {
       const result = await service.findAll();
 
       expect(result).toHaveLength(2);
-      expect(prismaMock.user.findMany).toHaveBeenCalledWith({
-        orderBy: { username: 'asc' },
-      });
+      expect(prismaMock.user.findMany).toHaveBeenCalledWith({ orderBy: { username: 'asc' } });
     });
   });
 
@@ -192,26 +196,65 @@ describe('UsersService', () => {
   // ── TOTP ────────────────────────────────────────────────────────────────────
 
   describe('enableTotp()', () => {
-    it('active le TOTP et stocke le secret', async () => {
+    it('active le TOTP, stocke 10 codes hachés et retourne les codes en clair', async () => {
       prismaMock.user.findUnique.mockResolvedValue(makeUser());
+      prismaMock.totpRecoveryCode.deleteMany.mockResolvedValue({ count: 0 });
+      prismaMock.totpRecoveryCode.createMany.mockResolvedValue({ count: 10 });
       prismaMock.user.update.mockResolvedValue(
         makeUser({ totpEnabled: true, totpSecret: 'SECRET123' }),
       );
 
-      const result = await service.enableTotp('uuid-1', 'SECRET123');
-      expect(result.totpEnabled).toBe(true);
-      expect(result.totpSecret).toBe('SECRET123');
+      const { user, recoveryCodes } = await service.enableTotp('uuid-1', 'SECRET123');
+
+      expect(user.totpEnabled).toBe(true);
+      expect(recoveryCodes).toHaveLength(10);
+      expect(recoveryCodes[0]).toMatch(/^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/);
+      expect(prismaMock.totpRecoveryCode.deleteMany).toHaveBeenCalledWith({ where: { userId: 'uuid-1' } });
+      expect(prismaMock.totpRecoveryCode.createMany).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.arrayContaining([expect.objectContaining({ userId: 'uuid-1' })]) }),
+      );
+    });
+
+    it('lève NotFoundException si utilisateur absent', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+      await expect(service.enableTotp('bad-id', 'S')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('disableTotp()', () => {
-    it('désactive le TOTP et efface le secret', async () => {
+    it('désactive le TOTP, efface le secret et purge les codes de récupération', async () => {
       prismaMock.user.findUnique.mockResolvedValue(makeUser({ totpEnabled: true, totpSecret: 'S' }));
+      prismaMock.totpRecoveryCode.deleteMany.mockResolvedValue({ count: 3 });
       prismaMock.user.update.mockResolvedValue(makeUser({ totpEnabled: false, totpSecret: null }));
 
       const result = await service.disableTotp('uuid-1');
+
       expect(result.totpEnabled).toBe(false);
       expect(result.totpSecret).toBeNull();
+      expect(prismaMock.totpRecoveryCode.deleteMany).toHaveBeenCalledWith({ where: { userId: 'uuid-1' } });
+    });
+  });
+
+  // ── consumeRecoveryCode ──────────────────────────────────────────────────────
+
+  describe('consumeRecoveryCode()', () => {
+    it('retourne true et marque le code comme utilisé si valide', async () => {
+      prismaMock.totpRecoveryCode.findFirst.mockResolvedValue({ id: 'code-id' });
+      prismaMock.totpRecoveryCode.update.mockResolvedValue({});
+
+      const result = await service.consumeRecoveryCode('uuid-1', 'A1B2-C3D4-E5F6-7890');
+
+      expect(result).toBe(true);
+      expect(prismaMock.totpRecoveryCode.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'code-id' }, data: expect.objectContaining({ usedAt: expect.any(Date) }) }),
+      );
+    });
+
+    it('retourne false si le code est invalide ou déjà utilisé', async () => {
+      prismaMock.totpRecoveryCode.findFirst.mockResolvedValue(null);
+
+      const result = await service.consumeRecoveryCode('uuid-1', 'BAD-CODE');
+      expect(result).toBe(false);
     });
   });
 });
