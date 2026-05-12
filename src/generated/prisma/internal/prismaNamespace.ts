@@ -80,12 +80,12 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.7.0
- * Query Engine version: 75cbdc1eb7150937890ad5465d861175c6624711
+ * Prisma Client JS version: 7.8.0
+ * Query Engine version: 3c6e192761c0362d496ed980de936e2f3cebcd3a
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.7.0",
-  engine: "75cbdc1eb7150937890ad5465d861175c6624711"
+  client: "7.8.0",
+  engine: "3c6e192761c0362d496ed980de936e2f3cebcd3a"
 }
 
 /**
@@ -385,6 +385,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   User: 'User',
+  TotpRecoveryCode: 'TotpRecoveryCode',
+  OidcConnection: 'OidcConnection',
   UserTree: 'UserTree',
   File: 'File',
   FilePermission: 'FilePermission',
@@ -404,7 +406,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "userTree" | "file" | "filePermission" | "fileVersion"
+    modelProps: "user" | "totpRecoveryCode" | "oidcConnection" | "userTree" | "file" | "filePermission" | "fileVersion"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -479,6 +481,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    TotpRecoveryCode: {
+      payload: Prisma.$TotpRecoveryCodePayload<ExtArgs>
+      fields: Prisma.TotpRecoveryCodeFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TotpRecoveryCodeFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TotpRecoveryCodeFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload>
+        }
+        findFirst: {
+          args: Prisma.TotpRecoveryCodeFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TotpRecoveryCodeFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload>
+        }
+        findMany: {
+          args: Prisma.TotpRecoveryCodeFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload>[]
+        }
+        create: {
+          args: Prisma.TotpRecoveryCodeCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload>
+        }
+        createMany: {
+          args: Prisma.TotpRecoveryCodeCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.TotpRecoveryCodeCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload>[]
+        }
+        delete: {
+          args: Prisma.TotpRecoveryCodeDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload>
+        }
+        update: {
+          args: Prisma.TotpRecoveryCodeUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload>
+        }
+        deleteMany: {
+          args: Prisma.TotpRecoveryCodeDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TotpRecoveryCodeUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.TotpRecoveryCodeUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload>[]
+        }
+        upsert: {
+          args: Prisma.TotpRecoveryCodeUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TotpRecoveryCodePayload>
+        }
+        aggregate: {
+          args: Prisma.TotpRecoveryCodeAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTotpRecoveryCode>
+        }
+        groupBy: {
+          args: Prisma.TotpRecoveryCodeGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TotpRecoveryCodeGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TotpRecoveryCodeCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TotpRecoveryCodeCountAggregateOutputType> | number
+        }
+      }
+    }
+    OidcConnection: {
+      payload: Prisma.$OidcConnectionPayload<ExtArgs>
+      fields: Prisma.OidcConnectionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.OidcConnectionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.OidcConnectionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload>
+        }
+        findFirst: {
+          args: Prisma.OidcConnectionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.OidcConnectionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload>
+        }
+        findMany: {
+          args: Prisma.OidcConnectionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload>[]
+        }
+        create: {
+          args: Prisma.OidcConnectionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload>
+        }
+        createMany: {
+          args: Prisma.OidcConnectionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.OidcConnectionCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload>[]
+        }
+        delete: {
+          args: Prisma.OidcConnectionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload>
+        }
+        update: {
+          args: Prisma.OidcConnectionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload>
+        }
+        deleteMany: {
+          args: Prisma.OidcConnectionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.OidcConnectionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.OidcConnectionUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload>[]
+        }
+        upsert: {
+          args: Prisma.OidcConnectionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$OidcConnectionPayload>
+        }
+        aggregate: {
+          args: Prisma.OidcConnectionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOidcConnection>
+        }
+        groupBy: {
+          args: Prisma.OidcConnectionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OidcConnectionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.OidcConnectionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.OidcConnectionCountAggregateOutputType> | number
         }
       }
     }
@@ -821,15 +971,47 @@ export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
   username: 'username',
+  role: 'role',
   auth_hash: 'auth_hash',
   salt_mp: 'salt_mp',
   salt_rc: 'salt_rc',
   pub_key: 'pub_key',
   priv_key_enc_1: 'priv_key_enc_1',
-  priv_key_enc_2: 'priv_key_enc_2'
+  priv_key_enc_2: 'priv_key_enc_2',
+  tree_enc_key: 'tree_enc_key',
+  totpSecret: 'totpSecret',
+  totpEnabled: 'totpEnabled'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const TotpRecoveryCodeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  codeHash: 'codeHash',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TotpRecoveryCodeScalarFieldEnum = (typeof TotpRecoveryCodeScalarFieldEnum)[keyof typeof TotpRecoveryCodeScalarFieldEnum]
+
+
+export const OidcConnectionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  provider: 'provider',
+  providerUserId: 'providerUserId',
+  email: 'email',
+  accessToken: 'accessToken',
+  refreshToken: 'refreshToken',
+  tokenExpiresAt: 'tokenExpiresAt',
+  driveScope: 'driveScope',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OidcConnectionScalarFieldEnum = (typeof OidcConnectionScalarFieldEnum)[keyof typeof OidcConnectionScalarFieldEnum]
 
 
 export const UserTreeScalarFieldEnum = {
@@ -901,6 +1083,14 @@ export const QueryMode = {
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 
 
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
 export const JsonNullValueFilter = {
   DbNull: DbNull,
   JsonNull: JsonNull,
@@ -931,6 +1121,27 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
+ * Reference to a field of type 'Role'
+ */
+export type EnumRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Role'>
+    
+
+
+/**
+ * Reference to a field of type 'Role[]'
+ */
+export type ListEnumRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Role[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -945,6 +1156,20 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'OidcProvider'
+ */
+export type EnumOidcProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OidcProvider'>
+    
+
+
+/**
+ * Reference to a field of type 'OidcProvider[]'
+ */
+export type ListEnumOidcProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OidcProvider[]'>
+    
+
+
+/**
  * Reference to a field of type 'Json'
  */
 export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
@@ -955,13 +1180,6 @@ export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'J
  * Reference to a field of type 'QueryMode'
  */
 export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -1085,9 +1303,26 @@ export type PrismaClientOptions = ({
    * ```
    */
   comments?: runtime.SqlCommenterPlugin[]
+  /**
+   * Optional maximum size for the query plan cache. If not provided, a default size will be used.
+   * A value of `0` can be used to disable the cache entirely. A higher cache size can improve
+   * performance for applications that execute a large number of unique queries, while a smaller
+   * cache size can reduce memory usage.
+   * 
+   * @example
+   * ```
+   * const prisma = new PrismaClient({
+   *   adapter,
+   *   queryPlanCacheMaxSize: 100,
+   * })
+   * ```
+   */
+  queryPlanCacheMaxSize?: number
 }
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  totpRecoveryCode?: Prisma.TotpRecoveryCodeOmit
+  oidcConnection?: Prisma.OidcConnectionOmit
   userTree?: Prisma.UserTreeOmit
   file?: Prisma.FileOmit
   filePermission?: Prisma.FilePermissionOmit

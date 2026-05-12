@@ -2,7 +2,7 @@
 
 ## 1. Inscription et Génération des Clés
 
-Ce flux garantit que le serveur ne connaît jamais la clé privée de l'utilisateur. Il intègre la génération de la TEK et de l'arbre initial.
+Ce flux garantit que le serveur ne connaît jamais le mot de passe ni la clé privée de l'utilisateur.
 
 ```mermaid
 sequenceDiagram
@@ -11,7 +11,9 @@ sequenceDiagram
     participant DB as PostgreSQL
 
     U->>U: Saisie Mot de Passe Maître (MP)
+    U->>U: Génération Salt_MP et Salt_RC aléatoires
     U->>U: Dérivation (KDF): MP + Salt_MP = KEK_1
+    U->>U: Dérivation (KDF): MP + Salt_MP = auth_hash  (envoyé au serveur pour l'auth locale)
     U->>U: Génération Clé de Recouvrement (RC)
     U->>U: Dérivation (KDF): RC + Salt_RC = KEK_2
     U->>U: Génération paire (Clé Publique / Clé Privée)
@@ -21,10 +23,12 @@ sequenceDiagram
     U->>U: Chiffrement TEK avec Clé Publique -> TEK_Enc
     U->>U: Création arbre vide JSON -> Chiffrement avec TEK -> Blob_0
     U->>U: Signature Blob_0 avec Clé Privée
-    U->>B: Envoi (Pub_Key, Priv_Enc1, Priv_Enc2, Salt_MP, Salt_RC, TEK_Enc, Blob_0, Signature)
-    B->>DB: Sauvegarde Profil + UserTree initial
-    B-->>U: Confirmation & Demande de sauvegarde RC offline
+    U->>B: POST /users<br/>{ username, email, auth_hash,<br/>  pub_key, priv_key_enc_1, priv_key_enc_2,<br/>  salt_mp, salt_rc, tree_enc_key }
+    B->>DB: Sauvegarde User (auth_hash stocké tel quel)
+    B-->>U: 201 — Confirmation & demande de sauvegarde RC offline
 ```
+
+> `auth_hash` est dérivé **côté client** via KDF. Le serveur le stocke et le compare avec `timingSafeEqual` — il n'effectue aucun hachage supplémentaire.
 
 ---
 
@@ -101,7 +105,31 @@ sequenceDiagram
 
 ---
 
-## 5. Récupération de Compte (Perte de Terminal)
+## 5. Changement de Mot de Passe Maître
+
+Le serveur ne participe pas au re-chiffrement — il reçoit uniquement les nouveaux artefacts déjà calculés.
+
+```mermaid
+sequenceDiagram
+    participant U as Utilisateur (App/Web)
+    participant B as Backend (NestJS)
+
+    U->>U: Saisie du Nouveau Mot de Passe Maître (NMP)
+    U->>U: Génération d'un nouveau Salt_MP
+    U->>U: Dérivation: NMP + nouveau_Salt_MP = nouvelle KEK_1
+    U->>U: Dérivation: NMP + nouveau_Salt_MP = nouveau auth_hash
+    U->>U: Déchiffrement Priv_Enc1 avec ancienne KEK_1 -> Clé Privée en clair
+    U->>U: Re-chiffrement Clé Privée avec nouvelle KEK_1 -> nouvelle Priv_Enc1
+    U->>B: POST /auth/change-password<br/>{ auth_hash, priv_key_enc_1, salt_mp }
+    B->>B: Met à jour auth_hash, priv_key_enc_1, salt_mp
+    B-->>U: 200 OK
+```
+
+> `priv_key_enc_2` et `salt_rc` ne changent pas — ils dépendent du code de récupération, pas du MP.
+
+---
+
+## 6. Récupération de Compte (Perte de Terminal)
 
 Ce flux montre comment un utilisateur récupère son accès s'il perd son appareil et son mot de passe.
 

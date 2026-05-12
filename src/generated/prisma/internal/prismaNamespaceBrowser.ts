@@ -52,6 +52,8 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   User: 'User',
+  TotpRecoveryCode: 'TotpRecoveryCode',
+  OidcConnection: 'OidcConnection',
   UserTree: 'UserTree',
   File: 'File',
   FilePermission: 'FilePermission',
@@ -78,15 +80,47 @@ export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
   username: 'username',
+  role: 'role',
   auth_hash: 'auth_hash',
   salt_mp: 'salt_mp',
   salt_rc: 'salt_rc',
   pub_key: 'pub_key',
   priv_key_enc_1: 'priv_key_enc_1',
-  priv_key_enc_2: 'priv_key_enc_2'
+  priv_key_enc_2: 'priv_key_enc_2',
+  tree_enc_key: 'tree_enc_key',
+  totpSecret: 'totpSecret',
+  totpEnabled: 'totpEnabled'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const TotpRecoveryCodeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  codeHash: 'codeHash',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TotpRecoveryCodeScalarFieldEnum = (typeof TotpRecoveryCodeScalarFieldEnum)[keyof typeof TotpRecoveryCodeScalarFieldEnum]
+
+
+export const OidcConnectionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  provider: 'provider',
+  providerUserId: 'providerUserId',
+  email: 'email',
+  accessToken: 'accessToken',
+  refreshToken: 'refreshToken',
+  tokenExpiresAt: 'tokenExpiresAt',
+  driveScope: 'driveScope',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OidcConnectionScalarFieldEnum = (typeof OidcConnectionScalarFieldEnum)[keyof typeof OidcConnectionScalarFieldEnum]
 
 
 export const UserTreeScalarFieldEnum = {
@@ -156,6 +190,14 @@ export const QueryMode = {
 } as const
 
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 export const JsonNullValueFilter = {

@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider     = "prisma-client"
   output       = "../src/generated/prisma"
@@ -14,20 +12,72 @@ datasource db {
 }
 
 model User {
-  id             String           @id @default(uuid())
-  email          String           @unique
-  username       String           @unique
-  auth_hash      String
-  salt_mp        String // salt pour KEK_1 (mot de passe)
-  salt_rc        String // salt pour KEK_2 (recovery key)
-  pub_key        String           @unique
-  priv_key_enc_1 String           @unique
-  priv_key_enc_2 String           @unique
-  userTree       UserTree?
-  files          File[]
-  permissions    FilePermission[] @relation("UserPermissions")
-  grantedPerms   FilePermission[] @relation("GrantedPermissions")
-  editedVersions FileVersion[]
+  id             String   @id @default(uuid())
+  email          String   @unique
+  username       String   @unique
+  role           Role     @default(USER)
+  auth_hash      String?  // null si auth uniquement via OIDC (sans mot de passe)
+  salt_mp        String?  // salt pour la dérivation du mot de passe maître
+  salt_rc        String?  // salt pour la dérivation du code de récupération
+  pub_key        String   @unique
+  priv_key_enc_1 String   @unique
+  priv_key_enc_2 String   @unique
+  tree_enc_key   String   @unique
+
+  totpSecret     String?
+  totpEnabled    Boolean  @default(false)
+
+  oidcConnections   OidcConnection[]
+  totpRecoveryCodes TotpRecoveryCode[]
+  userTree          UserTree?
+  files             File[]
+  permissions       FilePermission[] @relation("UserPermissions")
+  grantedPerms      FilePermission[] @relation("GrantedPermissions")
+  editedVersions    FileVersion[]
+}
+
+model TotpRecoveryCode {
+  id        String    @id @default(uuid())
+  userId    String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Un utilisateur peut avoir plusieurs connexions OIDC (Google, Rezel, etc.)
+model OidcConnection {
+  id             String       @id @default(uuid())
+  userId         String
+  provider       OidcProvider
+  providerUserId String
+  email          String?
+
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+  driveScope     Boolean      @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+  @@index([userId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OidcProvider {
+  GOOGLE
+  REZEL
+  DROPBOX
 }
 
 model UserTree {
@@ -39,27 +89,28 @@ model UserTree {
 }
 
 model File {
-  id             String           @id @default(uuid())
-  createdAt      DateTime         @default(now())
-  cloud_data     Json
-  ownerId        String
-  owner          User             @relation(fields: [ownerId], references: [id])
-  permissions    FilePermission[]
-  versions       FileVersion[]
+  id          String           @id @default(uuid())
+  createdAt   DateTime         @default(now())
+  cloud_data  Json
+  ownerId     String
+  owner       User             @relation(fields: [ownerId], references: [id])
+  permissions FilePermission[]
+  versions    FileVersion[]
 }
 
 model FilePermission {
-  id          String         @id @default(uuid())
+  id          String   @id @default(uuid())
   fileId      String
   userId      String
   enc_fek     String
-  read        Boolean        @default(false)
-  write       Boolean        @default(false)
+  read        Boolean  @default(false)
+  write       Boolean  @default(false)
   grantedById String
-  grantedAt   DateTime       @default(now())
-  file        File           @relation(fields: [fileId], references: [id])
-  user        User           @relation("UserPermissions", fields: [userId], references: [id])
-  grantedBy   User           @relation("GrantedPermissions", fields: [grantedById], references: [id])
+  grantedAt   DateTime @default(now())
+
+  file      File @relation(fields: [fileId], references: [id])
+  user      User @relation("UserPermissions", fields: [userId], references: [id])
+  grantedBy User @relation("GrantedPermissions", fields: [grantedById], references: [id])
 
   @@unique([fileId, userId])
 }
@@ -71,8 +122,9 @@ model FileVersion {
   createdAt  DateTime @default(now())
   signature  String
   editedById String
-  file       File     @relation(fields: [fileId], references: [id])
-  editor     User     @relation(fields: [editedById], references: [id])
+
+  file   File @relation(fields: [fileId], references: [id])
+  editor User @relation(fields: [editedById], references: [id])
 
   @@unique([fileId, version])
 }

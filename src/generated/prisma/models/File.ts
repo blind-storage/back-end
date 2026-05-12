@@ -350,10 +350,6 @@ export type FileUncheckedUpdateManyWithoutOwnerNestedInput = {
   deleteMany?: Prisma.FileScalarWhereInput | Prisma.FileScalarWhereInput[]
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
-}
-
 export type FileCreateNestedOneWithoutPermissionsInput = {
   create?: Prisma.XOR<Prisma.FileCreateWithoutPermissionsInput, Prisma.FileUncheckedCreateWithoutPermissionsInput>
   connectOrCreate?: Prisma.FileCreateOrConnectWithoutPermissionsInput
