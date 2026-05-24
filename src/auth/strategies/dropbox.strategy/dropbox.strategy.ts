@@ -4,7 +4,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { PrismaService } from '@/prisma.service';
-import { OidcProvider } from '@monprojet/types';
+import { OidcProvider } from '@blind-storage/types';
 
 @Injectable()
 export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {

@@ -8,7 +8,7 @@ import {
 import { createHash, randomBytes } from 'crypto';
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
-import { CreateUserDto, UpdateUserDto } from '@monprojet/types';
+import { CreateUserDto, UpdateUserDto } from '@blind-storage/types';
 
 // ─── Helpers pour les codes de récupération ──────────────────────���─────────────
 

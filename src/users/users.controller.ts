@@ -27,7 +27,7 @@ import {
   Role,
   UpdateUserDto,
   UserEntity,
-} from '@monprojet/types';
+} from '@blind-storage/types';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles/roles.guard';

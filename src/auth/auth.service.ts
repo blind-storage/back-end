@@ -14,14 +14,14 @@ import {
   OidcProvider,
   OidcSetupDto,
   Role,
-} from '@monprojet/types';
+} from '@blind-storage/types';
 import type {
   JwtPayload,
   PendingLinkPayload,
   PendingLinkProfile,
   PendingOidcProfile,
   PendingSetupPayload,
-} from '@monprojet/types';
+} from '@blind-storage/types';
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
 import { UsersService, hashRecoveryCode } from '../users/users.service';
