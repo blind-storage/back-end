@@ -3,39 +3,9 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { Role } from '@monprojet/types';
+import type { JwtUser } from '@monprojet/types';
 import { PrismaService } from '@/prisma.service';
-import { Role } from '@/generated/prisma/enums';
-import type { UserModel } from '@/generated/prisma/models/User';
-
-export type JwtPayload = {
-  sub: string;
-  email: string;
-  username: string;
-  role: Role;
-};
-
-export type JwtUser = Omit<UserModel, 'auth_hash' | 'salt_mp' | 'salt_rc' | 'totpSecret'> & {
-  role: Role;
-};
-
-export type PendingSetupPayload = {
-  pending: true;
-  provider: string;
-  providerUserId: string;
-  email: string;
-  accessToken: string;
-  refreshToken: string | null;
-};
-
-export type PendingLinkPayload = {
-  pendingLink: true;
-  userId: string;
-  provider: string;
-  providerUserId: string;
-  email: string;
-  accessToken: string;
-  refreshToken: string | null;
-};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

@@ -75,6 +75,8 @@ Retourné quand l'email OIDC correspond à un compte existant sans connexion OID
   provider: "google-drive" | "dropbox"
   createdAt: string                   // ISO 8601
   mimeType?: string
+  enc_fek: string                     // FEK chiffrée avec la clé publique de l'utilisateur
+  signature: string                   // Signature de l'utilisateur sur le fichier chiffré (base64)
 }
 ```
 
@@ -428,13 +430,13 @@ Le client chiffre le fichier **avant** l'envoi et fournit la clé de fichier chi
 |---|---|---|---|
 | `file` | binary | ✓ | Contenu du fichier (chiffré côté client) |
 | `enc_fek` | string | ✓ | Clé de fichier (FEK) chiffrée avec la clé publique de l'utilisateur |
+| `signature` | string | ✓ | Signature du fichier chiffré avec la clé privée de l'utilisateur (base64) |
 
 **Réponse 201** :
 
 ```ts
 {
   fileId: string   // UUID en base de données — à conserver pour download/delete
-  message: string
 }
 ```
 
@@ -445,11 +447,12 @@ Le client chiffre le fichier **avant** l'envoi et fournit la clé de fichier chi
 
 ### `GET /cloud-storage/files/:fileId/download`
 
-Télécharge le contenu d'un fichier.
+Télécharge le contenu chiffré d'un fichier depuis le provider cloud associé.  
+Le client déchiffre le contenu en local après vérification de la signature (voir [Notes cryptographiques](#notes-cryptographiques)).
 
 **Auth** : Bearer JWT  
 **Paramètre** : `fileId` — UUID (retourné par l'upload)  
-**Réponse 200** : `application/octet-stream` — contenu binaire du fichier  
+**Réponse 200** : `application/octet-stream` — contenu binaire chiffré  
 **Réponse 403** : pas de permission de lecture  
 **Réponse 404** : fichier introuvable
 
@@ -500,10 +503,23 @@ Supprime un fichier du provider cloud **et** de la base de données.
 
 ```
 1. Générer une FEK (File Encryption Key) aléatoire
-2. Chiffrer le fichier avec la FEK
+2. Chiffrer le fichier avec la FEK  →  fichier_chiffré
 3. Chiffrer la FEK avec pub_key de l'utilisateur  →  enc_fek
-4. Envoyer : fichier chiffré + enc_fek
+4. Signer le fichier chiffré avec priv_key de l'utilisateur  →  signature
+5. Envoyer : fichier_chiffré + enc_fek + signature
 ```
+
+### Téléchargement et déchiffrement de fichier
+
+```
+1. GET /cloud-storage/files  →  récupérer enc_fek + signature du fichier voulu
+2. GET /cloud-storage/files/:fileId/download  →  fichier_chiffré (octet-stream)
+3. Vérifier la signature du fichier chiffré avec pub_key
+4. Déchiffrer la FEK avec priv_key  →  fek
+5. Déchiffrer le fichier avec la FEK  →  fichier en clair
+```
+
+> Le champ `provider` de `FileListItem` indique depuis quel cloud provider le fichier est hébergé ; le backend résout l'accès au provider correspondant transparemment.
 
 ### Connexion OIDC sans mot de passe
 

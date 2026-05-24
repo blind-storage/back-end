@@ -21,15 +21,17 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import {
+  CreateUserDto,
+  EnableTotpResponseDto,
+  Role,
+  UpdateUserDto,
+  UserEntity,
+} from '@monprojet/types';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { Role } from '../generated/prisma/enums';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles/roles.guard';
 import { SelfOrAdminGuard } from '../auth/guards/self-or-admin/self-or-admin.guard';
-import { CreateUserDto } from './dto/create-user.dto';
-import { EnableTotpResponseDto } from './dto/enable-totp-response.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UserEntity } from './entities/user.entity';
 import { UsersService } from './users.service';
 
 @ApiTags('Users')

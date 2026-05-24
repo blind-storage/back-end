@@ -16,19 +16,21 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import {
+  AuthResponseDto,
+  LoginDto,
+  OidcLinkPendingResponseDto,
+  OidcPendingResponseDto,
+  OidcSetupDto,
+  TotpRecoverDto,
+} from '@monprojet/types';
+import type { JwtUser } from '@monprojet/types';
 import { AuthService } from './auth.service';
-import { AuthResponseDto } from './dto/auth-response.dto';
-import { LoginDto } from './dto/login.dto';
-import { OidcLinkPendingResponseDto } from './dto/oidc-link-pending-response.dto';
-import { OidcPendingResponseDto } from './dto/oidc-pending-response.dto';
-import { OidcSetupDto } from './dto/oidc-setup.dto';
-import { TotpRecoverDto } from './dto/totp-recover.dto';
 import { DropboxAuthGuard } from './guards/dropbox-auth/dropbox-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth/jwt-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
 import { RezelAuthGuard } from './guards/rezel-auth/jwt-auth.guard';
-import type { JwtUser } from './strategies/jwt.strategy/jwt.strategy';
 
 @ApiTags('Auth')
 @Controller('auth')
