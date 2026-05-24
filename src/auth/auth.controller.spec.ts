@@ -1,9 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OidcProvider, Role } from '../generated/prisma/enums';
+import { OidcProvider, OidcSetupDto, Role, TotpRecoverDto } from '@monprojet/types';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { TotpRecoverDto } from './dto/totp-recover.dto';
-import { OidcSetupDto } from './dto/oidc-setup.dto';
 import { GoogleAuthGuard } from './guards/google-auth/jwt-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';

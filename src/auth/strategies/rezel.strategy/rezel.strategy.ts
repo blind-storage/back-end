@@ -4,7 +4,7 @@ import { Strategy } from 'passport-openidconnect';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { PrismaService } from '@/prisma.service';
-import { OidcProvider } from '@/generated/prisma/enums';
+import { OidcProvider } from '@monprojet/types';
 
 @Injectable()
 export class RezelStrategy extends PassportStrategy(Strategy, 'rezel') {

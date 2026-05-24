@@ -7,38 +7,24 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { timingSafeEqual } from 'crypto';
-import { OidcProvider, Role } from '../generated/prisma/enums';
-import type { UserModel } from '../generated/prisma/models/User';
-import { PrismaService } from '../prisma.service';
-import { UsersService, hashRecoveryCode } from '../users/users.service';
-import { AuthResponseDto } from './dto/auth-response.dto';
-import { OidcLinkPendingResponseDto } from './dto/oidc-link-pending-response.dto';
-import { OidcPendingResponseDto } from './dto/oidc-pending-response.dto';
-import { OidcSetupDto } from './dto/oidc-setup.dto';
+import {
+  AuthResponseDto,
+  OidcLinkPendingResponseDto,
+  OidcPendingResponseDto,
+  OidcProvider,
+  OidcSetupDto,
+  Role,
+} from '@monprojet/types';
 import type {
   JwtPayload,
   PendingLinkPayload,
+  PendingLinkProfile,
+  PendingOidcProfile,
   PendingSetupPayload,
-} from './strategies/jwt.strategy/jwt.strategy';
-
-export interface PendingOidcProfile {
-  pendingSetup: true;
-  provider: OidcProvider;
-  providerUserId: string;
-  email: string;
-  accessToken: string;
-  refreshToken: string | null;
-}
-
-export interface PendingLinkProfile {
-  pendingLink: true;
-  userId: string;
-  provider: OidcProvider;
-  providerUserId: string;
-  email: string;
-  accessToken: string;
-  refreshToken: string | null;
-}
+} from '@monprojet/types';
+import type { UserModel } from '../generated/prisma/models/User';
+import { PrismaService } from '../prisma.service';
+import { UsersService, hashRecoveryCode } from '../users/users.service';
 
 type OidcCallbackUser = UserModel | PendingOidcProfile | PendingLinkProfile;
 

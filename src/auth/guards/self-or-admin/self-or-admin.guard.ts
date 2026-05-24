@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Role } from '../../../generated/prisma/enums';
-import type { JwtUser } from '../../strategies/jwt.strategy/jwt.strategy';
+import { Role } from '@monprojet/types';
+import type { JwtUser } from '@monprojet/types';
 
 @Injectable()
 export class SelfOrAdminGuard implements CanActivate {
