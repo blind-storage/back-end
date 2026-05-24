@@ -3,8 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { Role } from '@monprojet/types';
-import type { JwtUser } from '@monprojet/types';
+import { Role } from '@blind-storage/types';
+import type { JwtUser } from '@blind-storage/types';
 import { PrismaService } from '@/prisma.service';
 
 @Injectable()

@@ -23,8 +23,8 @@ import {
   OidcPendingResponseDto,
   OidcSetupDto,
   TotpRecoverDto,
-} from '@monprojet/types';
-import type { JwtUser } from '@monprojet/types';
+} from '@blind-storage/types';
+import type { JwtUser } from '@blind-storage/types';
 import { AuthService } from './auth.service';
 import { DropboxAuthGuard } from './guards/dropbox-auth/dropbox-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth/jwt-auth.guard';

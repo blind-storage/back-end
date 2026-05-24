@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Role } from '@monprojet/types';
-import type { JwtUser } from '@monprojet/types';
+import { Role } from '@blind-storage/types';
+import type { JwtUser } from '@blind-storage/types';
 
 @Injectable()
 export class SelfOrAdminGuard implements CanActivate {

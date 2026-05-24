@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OidcProvider, OidcSetupDto, Role, TotpRecoverDto } from '@monprojet/types';
+import { OidcProvider, OidcSetupDto, Role, TotpRecoverDto } from '@blind-storage/types';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleAuthGuard } from './guards/google-auth/jwt-auth.guard';

@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CreateUserDto, Role, UpdateUserDto } from '@monprojet/types';
+import { CreateUserDto, Role, UpdateUserDto } from '@blind-storage/types';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles/roles.guard';
 import { SelfOrAdminGuard } from '../auth/guards/self-or-admin/self-or-admin.guard';

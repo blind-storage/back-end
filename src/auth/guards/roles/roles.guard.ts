@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@monprojet/types';
-import type { JwtUser } from '@monprojet/types';
+import { Role } from '@blind-storage/types';
+import type { JwtUser } from '@blind-storage/types';
 import { ROLES_KEY } from '../../decorators/roles.decorator';
 
 @Injectable()

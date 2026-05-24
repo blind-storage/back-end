@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma.service';
-import { CreateUserDto, UpdateUserDto } from '@monprojet/types';
+import { CreateUserDto, UpdateUserDto } from '@blind-storage/types';
 import { UsersService } from './users.service';
 import type { UserModel } from '../generated/prisma/models/User';
 

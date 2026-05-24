@@ -2,8 +2,8 @@ import { BadRequestException, ConflictException, UnauthorizedException } from '@
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
-import { OidcProvider, OidcSetupDto, Role } from '@monprojet/types';
-import type { PendingOidcProfile } from '@monprojet/types';
+import { OidcProvider, OidcSetupDto, Role } from '@blind-storage/types';
+import type { PendingOidcProfile } from '@blind-storage/types';
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
 import { UsersService } from '../users/users.service';
