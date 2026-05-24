@@ -17,6 +17,12 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document); // accessible sur /api/docs
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
+  app.enableCors({
+    origin: process.env.FRONTEND_URL,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  });
 
   await app.listen(3000);
 }
