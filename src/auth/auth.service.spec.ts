@@ -42,6 +42,7 @@ const makePendingProfile = (overrides: Partial<PendingOidcProfile> = {}): Pendin
 const makeOidcSetupDto = (overrides: Partial<OidcSetupDto> = {}): OidcSetupDto => ({
   setup_token: 'valid.pending.token',
   username: 'alice42',
+  auth_hash: '$2b$10$hashedpassword',
   pub_key: 'pub-key',
   priv_key_enc_1: 'enc1',
   priv_key_enc_2: 'enc2',
