@@ -171,25 +171,14 @@ jobs:
               "${SSH_USER}@${SSH_HOST}" \
               'echo "SSH OK: $(hostname)"' 2>&1 || echo "Exit code: $?"
 
-  # ── Deploy: runs after successful build ─────────────────────────────────────
+  # ── Deploy: runs on the server (self-hosted runner) ─────────────────────────
   deploy:
     name: Deploy to Server
     needs: build-and-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: production
 
     steps:
-      - name: Deploy via SSH
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh -o StrictHostKeyChecking=no -o BatchMode=yes \
-              -i ~/.ssh/deploy_key -6 \
-              "${SSH_USER}@[${SSH_HOST}]" \
-              '/opt/blind-storage/scripts/deploy.sh backend'
+      - name: Deploy
+        run: /opt/blind-storage/scripts/deploy.sh backend
