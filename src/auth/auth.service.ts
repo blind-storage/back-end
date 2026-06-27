@@ -6,7 +6,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual, randomBytes, publicEncrypt, constants, createPublicKey } from 'crypto';
+import { verifySync, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib';
+
+function checkTotp(token: string, secret: string): boolean {
+  return verifySync({ token, secret, crypto: new NobleCryptoPlugin(), base32: new ScureBase32Plugin() }).valid;
+}
 import {
   AuthResponseDto,
   OidcLinkPendingResponseDto,
@@ -14,13 +19,18 @@ import {
   OidcProvider,
   OidcSetupDto,
   Role,
+  TotpRequiredResponseDto,
 } from '@blind-storage/types';
 import type {
   JwtPayload,
+  OidcLinkTotpPendingPayload,
+  OidcNoncePayload,
+  OidcPendingPayload,
   PendingLinkPayload,
   PendingLinkProfile,
   PendingOidcProfile,
   PendingSetupPayload,
+  TotpPendingPayload,
 } from '@blind-storage/types';
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
@@ -69,7 +79,17 @@ export class AuthService {
     return user;
   }
 
-  login(user: UserModel): AuthResponseDto {
+  login(user: UserModel): AuthResponseDto | TotpRequiredResponseDto {
+    if (user.totpEnabled) {
+      this.logger.log(`TOTP required for user: ${user.id}`);
+      const payload: TotpPendingPayload = { totpPending: true, sub: user.id };
+      const totp_token = this.jwtService.sign(payload, { expiresIn: '5m' });
+      return { totp_required: true, totp_token };
+    }
+    return this.issueToken(user);
+  }
+
+  issueToken(user: UserModel): AuthResponseDto {
     this.logger.log(`Issuing JWT for user: ${user.id}`);
     const payload: JwtPayload = {
       sub: user.id,
@@ -80,12 +100,95 @@ export class AuthService {
     return { access_token: this.jwtService.sign(payload) };
   }
 
+  async verifyTotpLogin(totpToken: string, code: string): Promise<AuthResponseDto> {
+    let payload: TotpPendingPayload;
+    try {
+      payload = this.jwtService.verify<TotpPendingPayload>(totpToken);
+    } catch {
+      throw new UnauthorizedException('Token TOTP invalide ou expiré');
+    }
+
+    if (!payload.totpPending) throw new UnauthorizedException('Token invalide');
+
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user || !user.totpEnabled || !user.totpSecret) {
+      throw new UnauthorizedException('Compte introuvable ou TOTP désactivé');
+    }
+
+    const isValid = checkTotp(code, user.totpSecret);
+    if (!isValid) {
+      this.logger.warn(`Invalid TOTP code for user: ${user.id}`);
+      throw new UnauthorizedException('Code TOTP incorrect');
+    }
+
+    this.logger.log(`TOTP verified for user: ${user.id}`);
+    return this.issueToken(user);
+  }
+
   // OIDC auth
 
   handleOidcCallback(user: OidcCallbackUser): AuthResponseDto | OidcPendingResponseDto | OidcLinkPendingResponseDto {
     if (isPendingSetup(user)) return this.generatePendingResponse(user);
     if (isPendingLink(user))  return this.generatePendingLinkResponse(user);
-    return this.login(user);
+    return this.issuePendingLoginToken(user);
+  }
+
+  private issuePendingLoginToken(user: UserModel): AuthResponseDto {
+    this.logger.log(`Issuing OIDC pending login token for user: ${user.id}`);
+    const payload: OidcPendingPayload = { oidcPending: true, sub: user.id, username: user.username };
+    return { access_token: this.jwtService.sign(payload, { expiresIn: '10m' }) };
+  }
+
+  async createOidcChallenge(pendingToken: string): Promise<{ nonce_token: string; encrypted_challenge: string; priv_key_enc_1: string }> {
+    let payload: OidcPendingPayload;
+    try {
+      payload = this.jwtService.verify<OidcPendingPayload>(pendingToken);
+    } catch {
+      throw new UnauthorizedException('Token OIDC invalide ou expiré');
+    }
+    if (!payload.oidcPending) throw new UnauthorizedException('Token invalide');
+
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user?.priv_key_enc_1) throw new UnauthorizedException('Utilisateur introuvable');
+
+    const challenge = randomBytes(32);
+    const pubKeyObject = createPublicKey({ key: Buffer.from(user.pub_key, 'base64'), format: 'der', type: 'spki' });
+    const encrypted = publicEncrypt(
+      { key: pubKeyObject, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: 'sha256' },
+      challenge,
+    );
+
+    const noncePayload: OidcNoncePayload = { oidcNonce: true, sub: user.id, nonce: challenge.toString('base64') };
+    const nonce_token = this.jwtService.sign(noncePayload, { expiresIn: '5m' });
+
+    return { nonce_token, encrypted_challenge: encrypted.toString('base64'), priv_key_enc_1: user.priv_key_enc_1 };
+  }
+
+  async verifyOidcChallenge(nonce_token: string, plaintext: string): Promise<AuthResponseDto | TotpRequiredResponseDto> {
+    let noncePayload: OidcNoncePayload;
+    try {
+      noncePayload = this.jwtService.verify<OidcNoncePayload>(nonce_token);
+    } catch {
+      throw new UnauthorizedException('Token de défi invalide ou expiré');
+    }
+    if (!noncePayload.oidcNonce) throw new UnauthorizedException('Token invalide');
+
+    const expected = Buffer.from(noncePayload.nonce, 'base64');
+    const received = Buffer.from(plaintext, 'base64');
+    if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
+      throw new UnauthorizedException('Défi RSA incorrect — mot de passe maître invalide');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: noncePayload.sub } });
+    if (!user) throw new UnauthorizedException('Utilisateur introuvable');
+
+    if (user.totpEnabled) {
+      const totpPayload: TotpPendingPayload = { totpPending: true, sub: user.id };
+      const totp_token = this.jwtService.sign(totpPayload, { expiresIn: '5m' });
+      return { totp_required: true, totp_token };
+    }
+
+    return this.issueToken(user);
   }
 
   generatePendingLinkResponse(profile: PendingLinkProfile): OidcLinkPendingResponseDto {
@@ -103,7 +206,7 @@ export class AuthService {
     return { link_required: true, link_token, email: profile.email };
   }
 
-  async confirmOidcLink(link_token: string, auth_hash: string): Promise<AuthResponseDto> {
+  async confirmOidcLink(link_token: string, auth_hash: string): Promise<AuthResponseDto | TotpRequiredResponseDto> {
     this.logger.log('Confirming OIDC link with master password');
 
     let payload: PendingLinkPayload;
@@ -123,6 +226,47 @@ export class AuthService {
     const isMatch = a.length === b.length && timingSafeEqual(a, b);
     if (!isMatch) throw new UnauthorizedException('Mot de passe maître incorrect');
 
+    if (user.totpEnabled) {
+      const totpPayload: OidcLinkTotpPendingPayload = { totpPending: true, sub: user.id, linkToken: link_token };
+      const totp_token = this.jwtService.sign(totpPayload, { expiresIn: '5m' });
+      return { totp_required: true, totp_token };
+    }
+
+    return this._createOidcLinkAndIssueToken(payload, user);
+  }
+
+  async confirmOidcLinkTotp(totp_token: string, code: string): Promise<AuthResponseDto> {
+    this.logger.log('Confirming OIDC link TOTP step');
+
+    let totpPayload: OidcLinkTotpPendingPayload;
+    try {
+      totpPayload = this.jwtService.verify<OidcLinkTotpPendingPayload>(totp_token);
+    } catch {
+      throw new UnauthorizedException('Token TOTP invalide ou expiré');
+    }
+
+    if (!totpPayload.totpPending || !totpPayload.linkToken) throw new UnauthorizedException('Token invalide');
+
+    const user = await this.prisma.user.findUnique({ where: { id: totpPayload.sub } });
+    if (!user || !user.totpEnabled || !user.totpSecret) {
+      throw new UnauthorizedException('Compte introuvable ou TOTP désactivé');
+    }
+
+    if (!checkTotp(code, user.totpSecret)) {
+      throw new UnauthorizedException('Code TOTP incorrect');
+    }
+
+    let linkPayload: PendingLinkPayload;
+    try {
+      linkPayload = this.jwtService.verify<PendingLinkPayload>(totpPayload.linkToken);
+    } catch {
+      throw new UnauthorizedException('Token de liaison expiré, recommencez le flux OIDC');
+    }
+
+    return this._createOidcLinkAndIssueToken(linkPayload, user);
+  }
+
+  private async _createOidcLinkAndIssueToken(payload: PendingLinkPayload, user: UserModel): Promise<AuthResponseDto> {
     const existing = await this.prisma.oidcConnection.findUnique({
       where: {
         provider_providerUserId: {
@@ -145,7 +289,7 @@ export class AuthService {
     });
 
     this.logger.log(`OIDC provider ${payload.provider} linked to user: ${user.id}`);
-    return this.login(user);
+    return this.issueToken(user);
   }
 
   generatePendingResponse(profile: PendingOidcProfile): OidcPendingResponseDto {
@@ -218,7 +362,7 @@ export class AuthService {
     });
 
     this.logger.log(`OIDC first-time setup completed for user: ${user.id}`);
-    return this.login(user);
+    return this.issueToken(user);
   }
 
   // Change password
@@ -308,6 +452,6 @@ export class AuthService {
     });
 
     this.logger.log(`TOTP recovery successful for user: ${user.id}`);
-    return this.login(updatedUser);
+    return this.issueToken(updatedUser);
   }
 }

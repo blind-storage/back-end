@@ -2,10 +2,25 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import session from 'express-session';
 
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  app.use(
+    session({
+      // ensure SESSION_SECRET is defined and typed as string for session
+      secret: ((): string => {
+        if (!process.env.SESSION_SECRET) {
+          throw new Error('SESSION_SECRET environment variable is required');
+        }
+        return process.env.SESSION_SECRET;
+      })(),
+      resave: false,
+      saveUninitialized: false,
+    }),
+  );
 
   const config = new DocumentBuilder()
     .setTitle('Mon API')

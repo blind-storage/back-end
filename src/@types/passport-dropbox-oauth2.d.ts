@@ -13,6 +13,7 @@ declare module 'passport-dropbox-oauth2' {
   }
 
   interface StrategyOptions {
+    apiVersion?: '1' | '2';
     clientID: string;
     clientSecret: string;
     callbackURL: string;
