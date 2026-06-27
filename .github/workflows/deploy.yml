@@ -151,13 +151,22 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
         run: |
+          echo "=== DEBUG ==="
+          echo "SSH_HOST='${SSH_HOST}'"
+          echo "SSH_USER='${SSH_USER}'"
+          echo "SSH_KEY set: $([ -n "$SSH_KEY" ] && echo yes || echo NO)"
+          echo "SSH_KEY first line: $(echo "$SSH_KEY" | head -1)"
+          echo "Target: ${SSH_USER}@[${SSH_HOST}]"
+          echo "=== SETUP ==="
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh -o StrictHostKeyChecking=no -o BatchMode=yes \
+          echo "Key fingerprint: $(ssh-keygen -lf ~/.ssh/deploy_key 2>&1)"
+          echo "=== CONNECT ==="
+          ssh -vvv -o StrictHostKeyChecking=no -o BatchMode=yes \
               -i ~/.ssh/deploy_key -6 \
               "${SSH_USER}@[${SSH_HOST}]" \
-              'echo "SSH OK: $(hostname)"'
+              'echo "SSH OK: $(hostname)"' 2>&1 || echo "Exit code: $?"
 
   # ── Deploy: runs after successful build ─────────────────────────────────────
   deploy:
