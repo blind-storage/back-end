@@ -140,21 +140,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Deploy: runs after successful build ─────────────────────────────────────
+
+
+  # ── Deploy: runs on the server (self-hosted runner) ─────────────────────────
   deploy:
     name: Deploy to Server
     needs: build-and-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment: production
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          port: 22
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            /opt/blind-storage/scripts/deploy.sh backend
+      - name: Deploy
+        run: /opt/blind-storage/scripts/deploy.sh backend
