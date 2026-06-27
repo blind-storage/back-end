@@ -156,7 +156,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh -o StrictHostKeyChecking=no -o BatchMode=yes \
               -i ~/.ssh/deploy_key -6 \
-              "${SSH_USER}@${SSH_HOST}" \
+              "${SSH_USER}@[${SSH_HOST}]" \
               'echo "SSH OK: $(hostname)"'
 
   # ── Deploy: runs after successful build ─────────────────────────────────────
@@ -179,5 +179,5 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh -o StrictHostKeyChecking=no -o BatchMode=yes \
               -i ~/.ssh/deploy_key -6 \
-              "${SSH_USER}@${SSH_HOST}" \
+              "${SSH_USER}@[${SSH_HOST}]" \
               '/opt/blind-storage/scripts/deploy.sh backend'
