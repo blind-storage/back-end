@@ -128,6 +128,7 @@ jobs:
   deploy:
     name: Deploy to Server
     needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
 
