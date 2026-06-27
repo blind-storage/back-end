@@ -166,8 +166,9 @@ jobs:
           echo "SSH_HOST after trim: '${SSH_HOST}'"
           echo "=== CONNECT ==="
           ssh -vvv -o StrictHostKeyChecking=no -o BatchMode=yes \
-              -i ~/.ssh/deploy_key -6 \
-              "${SSH_USER}@[${SSH_HOST}]" \
+              -o AddressFamily=inet6 \
+              -i ~/.ssh/deploy_key -p 22 \
+              "${SSH_USER}@${SSH_HOST}" \
               'echo "SSH OK: $(hostname)"' 2>&1 || echo "Exit code: $?"
 
   # ── Deploy: runs after successful build ─────────────────────────────────────
