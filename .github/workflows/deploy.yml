@@ -14,7 +14,10 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout back-end
+        uses: actions/checkout@v4
+        with:
+          path: back-end
 
       - name: Checkout types
         uses: actions/checkout@v4
@@ -27,23 +30,29 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: back-end/package-lock.json
 
       - name: Build types
         run: cd types && npm ci && npm run build
 
       - name: Install dependencies
+        working-directory: back-end
         run: npm ci
 
       - name: Lint
+        working-directory: back-end
         run: npm run lint
 
-  # ── Tests: runs on PR to main or push to main ───────────────────────────────
+  # ── Tests: runs only on push to main ────────────────────────────────────────
   test:
     name: Test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout back-end
+        uses: actions/checkout@v4
+        with:
+          path: back-end
 
       - name: Checkout types
         uses: actions/checkout@v4
@@ -56,14 +65,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: back-end/package-lock.json
 
       - name: Build types
         run: cd types && npm ci && npm run build
 
       - name: Install dependencies
+        working-directory: back-end
         run: npm ci
 
       - name: Test
+        working-directory: back-end
         run: npm test
 
   # ── Build & push: runs on push to main after lint + test ────────────────────
@@ -81,7 +93,10 @@ jobs:
       image_digest: ${{ steps.push.outputs.digest }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout back-end
+        uses: actions/checkout@v4
+        with:
+          path: back-end
 
       - name: Checkout types
         uses: actions/checkout@v4
@@ -115,7 +130,7 @@ jobs:
         id: push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: back-end
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
