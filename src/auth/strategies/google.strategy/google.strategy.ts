@@ -16,6 +16,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientID:     process.env.GOOGLE_CLIENT_ID     ?? (() => { throw new Error('GOOGLE_CLIENT_ID is not defined'); })(),
       clientSecret: process.env.GOOGLE_SECRET ?? (() => { throw new Error('GOOGLE_SECRET is not defined'); })(),
       callbackURL:  process.env.GOOGLE_CALLBACK_URL  ?? (() => { throw new Error('GOOGLE_CALLBACK_URL is not defined'); })(),
+      // Login uniquement : on ne demande PAS l'accès Drive ici. Le stockage est branché
+      // séparément via GET /cloud-storage/google-drive/connect (modèle découplé).
       scope: ['email', 'profile'],
     });
   }
@@ -69,9 +71,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       return;
     }
 
+    // Login : on met à jour l'email mais on NE TOUCHE PAS aux tokens de stockage
+    // (accessToken/refreshToken/driveScope), gérés par le flux de connexion Drive.
     await this.prisma.oidcConnection.update({
       where: { id: connection.id },
-      data: { accessToken, refreshToken, email },
+      data: { email },
     });
 
     this.logger.info('Google authentication successful', {

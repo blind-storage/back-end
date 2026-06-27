@@ -71,9 +71,11 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
       return;
     }
 
+    // Login : on met à jour l'email seulement. Les tokens de stockage Dropbox
+    // (avec refresh + scopes contenu) sont gérés par le flux de connexion dédié.
     await this.prisma.oidcConnection.update({
       where: { id: connection.id },
-      data: { accessToken, refreshToken, email },
+      data: { email },
     });
 
     this.logger.info('Dropbox authentication successful', {
