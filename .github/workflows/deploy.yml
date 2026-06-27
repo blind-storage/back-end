@@ -140,6 +140,25 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # ── [DEBUG] SSH test: runs on every push — remove once SSH works ─────────────
+  test-ssh:
+    name: "[DEBUG] Test SSH"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test SSH connection
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -o StrictHostKeyChecking=no -o BatchMode=yes \
+              -i ~/.ssh/deploy_key -6 \
+              "${SSH_USER}@${SSH_HOST}" \
+              'echo "SSH OK: $(hostname)"'
+
   # ── Deploy: runs after successful build ─────────────────────────────────────
   deploy:
     name: Deploy to Server
@@ -150,11 +169,15 @@ jobs:
 
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          port: 22
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            /opt/blind-storage/scripts/deploy.sh backend
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh -o StrictHostKeyChecking=no -o BatchMode=yes \
+              -i ~/.ssh/deploy_key -6 \
+              "${SSH_USER}@${SSH_HOST}" \
+              '/opt/blind-storage/scripts/deploy.sh backend'
