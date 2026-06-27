@@ -1,110 +1,127 @@
-# 🛡️ Blind Storage
+# Blind Storage
+
+API backend Zero Knowledge pour le stockage chiffré de fichiers.
 
 ## Objectifs
-* **Zero Knowledge :** L'application ou le cloud provider ne doivent jamais avoir accès aux données en clair ni aux clés privées des utilisateurs ni aux fichiers déchiffrés.
-* **Multi-plateforme :** API RESTful pour les applications Web et Mobile.
-* **Gestion multi-terminaux :** Synchronisation sécurisée de l'accès aux documents sur plusieurs appareils liés à un seul compte.
-* **Partage sécurisé :** Permettre le partage de fichiers entre utilisateurs avec des droits d'accès granulaires.
-* **Intégration Cloud :** Utilisation de services de stockage tiers (Dropbox, Google Cloud, etc.) pour héberger les fichiers chiffrés.
-* **Gestion des droits d'accès :** Implémentation d'un système de permissions pour contrôler qui peut voir ou éditer les fichiers.
-* **Résilience :** Implémentation d'une solution de recouvrement en cas de perte d'un terminal.
+
+- **Zero Knowledge :** Le serveur ne voit jamais les données en clair, les clés privées ni les fichiers déchiffrés.
+- **Multi-plateforme :** API RESTful pour les applications Web et Mobile.
+- **Gestion multi-terminaux :** Synchronisation sécurisée sur plusieurs appareils liés à un seul compte.
+- **Partage sécurisé :** Partage de fichiers entre utilisateurs avec droits d'accès granulaires.
+- **Intégration Cloud :** Stockage des fichiers chiffrés sur des fournisseurs tiers (Dropbox, Google Cloud, etc.).
+- **Résilience :** Solution de recouvrement en cas de perte d'un terminal.
+
+## Documentation
+
+- [Architecture & Modèle Cryptographique](doc/architecture.md)
+- [Schémas des Flux Cryptographiques](doc/crypto-flows.md)
+- [Authentification](doc/auth.md)
+- [Swagger interactif](http://localhost:3000/api/docs) *(serveur lancé)*
 
 ---
 
-## 🏗️ Architecture Technique
+## Get Started
 
-L'architecture est pensée pour séparer la gestion des métadonnées/clés publiques (gérées par notre Backend) du stockage des fichiers chiffrés (délégué aux Clouds Publics).
+### Prérequis
 
-* **Backend / API :** NestJS (Node.js). Il sert d'interface entre les applications clientes et la base de données. Il ne voit jamais les données en clair ni les clés privées déchiffrées.
-* **Base de Données :** PostgreSQL avec l'ORM Prisma.
-* **Stockage de Fichiers :** Intégration via API aux fournisseurs de Clouds Publics (Dropbox, Google Cloud, etc.).
+- [Node.js](https://nodejs.org/) >= 20
+- [Docker](https://www.docker.com/) & Docker Compose
 
----
+### Installation
 
-## 🔐 Modèle Cryptographique (Zero Knowledge)
+```bash
+# 1. Cloner le dépôt
+git clone https://github.com/thomas-cad/blind-storage.git
+cd blind-storage
 
-La sécurité repose sur une combinaison de cryptographie symétrique (pour la performance) et asymétrique à clé publique (pour le partage et la gestion des identités).
+# 2. Installer les dépendances
+npm install
 
-1.  **Chiffrement des Fichiers (Sélectif) :** Chaque fichier est chiffré avec l'algorithme **AES-GCM** à l'aide d'une clé unique appelée **FEK** (File Encryption Key).
-2.  **Renouvellement des Clés :** La FEK est renouvelée à chaque modification des droits d'accès d'un fichier.
-3.  **Intégrité :** Chaque utilisateur signe cryptographiquement le fichier à chaque modification (édit).
-4.  **Gestion des Clés Utilisateurs :** * Le backend stocke et distribue les **clés publiques**.
-    * Le backend stocke la **clé privée**, mais celle-ci est **fortement chiffrée**.
-5.  **Protection de la Clé Privée (KEK - Key Encryption Key) :** La clé privée est stockée chiffrée sous deux formes différentes sur le serveur :
-    * Chiffrée via une KEK dérivée du **Mot de Passe Maître (MP) + Salt** de l'utilisateur.
-    * Chiffrée une seconde fois via une KEK dérivée d'une **Clé de Recouvrement** (Recovery Key) générée à l'inscription, que l'utilisateur doit conserver hors ligne.
-
----
-
-## 📊 Schémas des Flux d'Architecture
-
-### 1. Inscription et Génération des Clés
-
-Ce flux garantit que le serveur ne connaît jamais la clé privée de l'utilisateur.
-
-```mermaid
-sequenceDiagram
-    participant U as Utilisateur (App/Web)
-    participant B as Backend (NestJS)
-    participant DB as PostgreSQL
-
-    U->>U: Saisie Mot de Passe Maître (MP)
-    U->>U: Dérivation (KDF): MP + Salt = KEK_1
-    U->>U: Génération Clé de Recouvrement (RC)
-    U->>U: Dérivation (KDF): RC + Salt = KEK_2
-    U->>U: Génération Bipolaire (Clé Publique / Clé Privée)
-    U->>U: Chiffrement Clé Privée avec KEK_1 -> Priv_Enc1
-    U->>U: Chiffrement Clé Privée avec KEK_2 -> Priv_Enc2
-    U->>B: Envoi (Clé Publique, Priv_Enc1, Priv_Enc2, Salt)
-    B->>DB: Sauvegarde Profil Utilisateur + Clés
-    B-->>U: Confirmation & Demande de sauvegarde de la Recovery Key offline
+# 3. Configurer les variables d'environnement
+cp .env.example .env
+# Remplir les valeurs dans .env
 ```
 
-### 2. Upload et Chiffrement d'un Fichier
+### Lancer la base de données
 
-Ce flux illustre le chiffrement local avant l'envoi sur le cloud public.
-
-```mermaid
-sequenceDiagram
-    participant U as Utilisateur (App/Web)
-    participant B as Backend (NestJS)
-    participant C as Cloud Public (Dropbox/GCP)
-
-    U->>U: Sélection du Fichier en clair
-    U->>U: Génération d'une nouvelle FEK (AES-GCM)
-    U->>U: Chiffrement du fichier avec FEK -> Fichier_Chiffré
-    U->>U: Signature du Fichier_Chiffré avec Clé Privée
-    U->>U: Chiffrement de la FEK avec Clé Publique de l'U -> FEK_Chiffrée
-    U->>C: Upload Fichier_Chiffré
-    C-->>U: Retour de l'URL/ID du Fichier
-    U->>B: Envoi Métadonnées (URL, Signature, FEK_Chiffrée)
-    B->>B: Vérification Signature
-    B-->>U: Validation de l'Upload
+```bash
+docker compose up -d
 ```
 
-### 3. Récupération de Compte (Perte de Terminal)
+### Initialiser la base de données (Prisma)
 
-Conformément à la tâche 4 du projet, ce flux montre comment un utilisateur récupère son accès s'il perd son appareil et son mot de passe.
-
-```mermaid
-sequenceDiagram
-    participant U as Nouvel Appareil (App)
-    participant B as Backend (NestJS)
-
-    U->>B: Demande de récupération de compte (ID/Email)
-    B-->>U: Envoi (Priv_Enc2, Salt)
-    U->>U: Saisie de la Clé de Recouvrement (Recovery Key) par l'U
-    U->>U: Dérivation: RC + Salt = KEK_2
-    U->>U: Déchiffrement: Priv_Enc2 avec KEK_2 -> Clé Privée en clair
-    U->>U: Définition Nouveau Mot de Passe Maître (NMP)
-    U->>U: Dérivation: NMP + Salt = Nouvelle KEK_1
-    U->>U: Chiffrement de la Clé Privée avec Nouvelle KEK_1 -> Nouvelle_Priv_Enc1
-    U->>B: Envoi Nouvelle_Priv_Enc1 pour mise à jour
-    B-->>U: Accès restauré et compte sécurisé
+```bash
+# Appliquer les migrations et générer le client
+npx prisma migrate deploy
+npx prisma generate
 ```
+
+> En développement, pour créer une nouvelle migration après modification du schéma :
+> ```bash
+> npx prisma migrate dev --name <nom-de-la-migration>
+> ```
+
+### Lancer le backend
+
+```bash
+# Développement (hot reload)
+npm run start:dev
+
+# Production
+npm run build && npm run start:prod
+```
+
+L'API est disponible sur `http://localhost:3000` (ou le `PORT` défini dans `.env`).
 
 ---
 
-## Contributeurs 
-* **Thomas Cadegros** - Etudiant cycle ingénieur spécialisé en cybersécurité à Télécom Paris - [mailto:thomas.cadegros@telecom-paris.fr](mailto:thomas.cadegros@telecom-paris.fr)
-* **Amine Slaoui** - Etudiant cycle ingénieur spécialisé en cybersécurité à Télécom Paris - [mailto:amine.slaoui@telecom-paris.fr](mailto:amine.slaoui@telecom-paris.fr)
+## Variables d'environnement
+
+| Variable | Description |
+|---|---|
+| `PORT` | Port d'écoute du serveur NestJS (défaut : `3000`) |
+| `DATABASE_URL` | URL de connexion Prisma |
+| `POSTGRES_USER` | Utilisateur PostgreSQL |
+| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL |
+| `POSTGRES_DB` | Nom de la base de données |
+| `POSTGRES_PORT` | Port exposé par le conteneur (défaut : `5432`) |
+| `JWT_SECRET` | Secret de signature des tokens JWT |
+| `GOOGLE_CLIENT_ID` | App ID Google OAuth2 |
+| `GOOGLE_SECRET` | App Secret Google OAuth2 |
+| `GOOGLE_CALLBACK_URL` | URL de callback Google |
+| `REZEL_CLIENT_ID` | Client ID Rezel OIDC |
+| `REZEL_SECRET` | Client Secret Rezel OIDC |
+| `REZEL_CALLBACK_URL` | URL de callback Rezel |
+| `REZEL_ISSUER_URL` | Issuer URL Rezel |
+| `REZEL_AUTH_URL` | Authorization URL Rezel |
+| `REZEL_TOKEN_URL` | Token URL Rezel |
+| `REZEL_USERINFO_URL` | UserInfo URL Rezel |
+| `DROPBOX_CLIENT_ID` | App key Dropbox OAuth2 |
+| `DROPBOX_CLIENT_SECRET` | App secret Dropbox OAuth2 |
+| `DROPBOX_CALLBACK_URL` | URL de callback Dropbox |
+
+Voir `.env.example` pour un exemple complet.
+
+---
+
+## Authentification
+
+Trois méthodes de connexion sont supportées, combinables sur un même compte :
+
+| Méthode | Description |
+|---|---|
+| **Locale** | `username` + `auth_hash` (dérivé du mot de passe maître côté client) |
+| **Google OAuth2** | Connexion via compte Google |
+| **Rezel OIDC** | Connexion via le SSO Rezel (Télécom Paris) |
+| **Dropbox OAuth2** | Connexion via compte Dropbox |
+
+Le serveur ne voit jamais le mot de passe en clair. `auth_hash` est calculé côté client par KDF et comparé par `timingSafeEqual`.
+
+Pour le détail des flux (création de compte, liaison de providers, TOTP) : [doc/auth.md](doc/auth.md).
+
+---
+
+## Contributeurs
+
+- **Thomas Cadegros** — Étudiant cycle ingénieur cybersécurité, Télécom Paris — [thomas.cadegros@telecom-paris.fr](mailto:thomas.cadegros@telecom-paris.fr)
+- **Amine Slaoui** — Étudiant cycle ingénieur cybersécurité, Télécom Paris — [amine.slaoui@telecom-paris.fr](mailto:amine.slaoui@telecom-paris.fr)
