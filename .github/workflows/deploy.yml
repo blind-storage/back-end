@@ -1,8 +1,8 @@
-name: Build & Deploy Backend
+name: CI/CD Backend
 
 on:
   push:
-    branches: [main]
+    branches: ['**']
   pull_request:
     branches: [main]
 
@@ -11,8 +11,9 @@ env:
   IMAGE_NAME: ghcr.io/blind-storage/back-end
 
 jobs:
-  lint-and-test:
-    name: Lint & Test
+  # ── Lint: runs on every push ────────────────────────────────────────────────
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,13 +39,40 @@ jobs:
       - name: Lint
         run: npm run lint
 
+  # ── Tests: runs on PR to main or push to main ───────────────────────────────
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout types
+        uses: actions/checkout@v4
+        with:
+          repository: blind-storage/types
+          path: types
+          ssh-key: ${{ secrets.TYPES_DEPLOY_KEY }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build types
+        run: cd types && npm ci && npm run build
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Test
         run: npm test
 
+  # ── Build & push: runs on push to main after lint + test ────────────────────
   build-and-push:
     name: Build & Push Image
-    needs: lint-and-test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [lint, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -96,6 +124,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+  # ── Deploy: runs after successful build ─────────────────────────────────────
   deploy:
     name: Deploy to Server
     needs: build-and-push

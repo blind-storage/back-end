@@ -13,13 +13,41 @@ export class RezelStrategy extends PassportStrategy(Strategy, 'rezel') {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {
     super({
-      issuer:           process.env.REZEL_ISSUER_URL   ?? (() => { throw new Error('REZEL_ISSUER_URL is not defined'); })(),
-      authorizationURL: process.env.REZEL_AUTH_URL     ?? (() => { throw new Error('REZEL_AUTH_URL is not defined'); })(),
-      tokenURL:         process.env.REZEL_TOKEN_URL    ?? (() => { throw new Error('REZEL_TOKEN_URL is not defined'); })(),
-      userInfoURL:      process.env.REZEL_USERINFO_URL ?? (() => { throw new Error('REZEL_USERINFO_URL is not defined'); })(),
-      clientID:         process.env.REZEL_CLIENT_ID    ?? (() => { throw new Error('REZEL_CLIENT_ID is not defined'); })(),
-      clientSecret:     process.env.REZEL_SECRET       ?? (() => { throw new Error('REZEL_SECRET is not defined'); })(),
-      callbackURL:      process.env.REZEL_CALLBACK_URL ?? (() => { throw new Error('REZEL_CALLBACK_URL is not defined'); })(),
+      issuer:
+        process.env.REZEL_ISSUER_URL ??
+        (() => {
+          throw new Error('REZEL_ISSUER_URL is not defined');
+        })(),
+      authorizationURL:
+        process.env.REZEL_AUTH_URL ??
+        (() => {
+          throw new Error('REZEL_AUTH_URL is not defined');
+        })(),
+      tokenURL:
+        process.env.REZEL_TOKEN_URL ??
+        (() => {
+          throw new Error('REZEL_TOKEN_URL is not defined');
+        })(),
+      userInfoURL:
+        process.env.REZEL_USERINFO_URL ??
+        (() => {
+          throw new Error('REZEL_USERINFO_URL is not defined');
+        })(),
+      clientID:
+        process.env.REZEL_CLIENT_ID ??
+        (() => {
+          throw new Error('REZEL_CLIENT_ID is not defined');
+        })(),
+      clientSecret:
+        process.env.REZEL_SECRET ??
+        (() => {
+          throw new Error('REZEL_SECRET is not defined');
+        })(),
+      callbackURL:
+        process.env.REZEL_CALLBACK_URL ??
+        (() => {
+          throw new Error('REZEL_CALLBACK_URL is not defined');
+        })(),
       scope: ['openid', 'profile', 'email'],
     });
   }
@@ -50,10 +78,13 @@ export class RezelStrategy extends PassportStrategy(Strategy, 'rezel') {
 
     if (!connection) {
       if (user) {
-        this.logger.warn('Rezel login: existing account found, returning pending link', {
-          context: RezelStrategy.name,
-          audit: { action: 'REZEL_AUTH_PENDING_LINK', providerUserId, email },
-        });
+        this.logger.warn(
+          'Rezel login: existing account found, returning pending link',
+          {
+            context: RezelStrategy.name,
+            audit: { action: 'REZEL_AUTH_PENDING_LINK', providerUserId, email },
+          },
+        );
         done(null, {
           pendingLink: true,
           userId: user.id,
@@ -66,10 +97,13 @@ export class RezelStrategy extends PassportStrategy(Strategy, 'rezel') {
         return;
       }
 
-      this.logger.warn('Rezel login: no account found, returning pending setup', {
-        context: RezelStrategy.name,
-        audit: { action: 'REZEL_AUTH_PENDING_SETUP', providerUserId, email },
-      });
+      this.logger.warn(
+        'Rezel login: no account found, returning pending setup',
+        {
+          context: RezelStrategy.name,
+          audit: { action: 'REZEL_AUTH_PENDING_SETUP', providerUserId, email },
+        },
+      );
       done(null, {
         pendingSetup: true,
         provider: OidcProvider.REZEL,

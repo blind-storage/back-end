@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OidcProvider, OidcSetupDto, Role, TotpRecoverDto } from '@blind-storage/types';
+import {
+  OidcProvider,
+  OidcSetupDto,
+  Role,
+  TotpRecoverDto,
+} from '@blind-storage/types';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleAuthGuard } from './guards/google-auth/jwt-auth.guard';
@@ -45,10 +50,14 @@ describe('AuthController', () => {
       controllers: [AuthController],
       providers: [{ provide: AuthService, useValue: authServiceMock }],
     })
-      .overrideGuard(LocalAuthGuard).useValue(guardAllow)
-      .overrideGuard(JwtAuthGuard).useValue(guardAllow)
-      .overrideGuard(GoogleAuthGuard).useValue(guardAllow)
-      .overrideGuard(RezelAuthGuard).useValue(guardAllow)
+      .overrideGuard(LocalAuthGuard)
+      .useValue(guardAllow)
+      .overrideGuard(JwtAuthGuard)
+      .useValue(guardAllow)
+      .overrideGuard(GoogleAuthGuard)
+      .useValue(guardAllow)
+      .overrideGuard(RezelAuthGuard)
+      .useValue(guardAllow)
       .compile();
 
     controller = module.get<AuthController>(AuthController);
@@ -83,41 +92,69 @@ describe('AuthController', () => {
   // ── GET /auth/google/callback ───────────────────────────────────────────��───
 
   describe('googleCallback()', () => {
-    it('retourne un JWT si le compte existe', () => {
-      authServiceMock.handleOidcCallback.mockReturnValue({ access_token: 'signed.jwt.token' });
-      const result = controller.googleCallback({ user: mockUser });
+    it('redirige avec un token si le compte existe', () => {
+      authServiceMock.handleOidcCallback.mockReturnValue({
+        access_token: 'signed.jwt.token',
+      });
+      const res = { redirect: jest.fn() };
+      controller.googleCallback({ user: mockUser }, res as any);
 
-      expect(result).toHaveProperty('access_token');
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('token='),
+      );
       expect(authServiceMock.handleOidcCallback).toHaveBeenCalledWith(mockUser);
     });
 
-    it('retourne un pending response si premier accès', () => {
+    it('redirige avec setup_token si premier accès', () => {
       authServiceMock.handleOidcCallback.mockReturnValue(mockPendingResponse);
-      const pending = { pendingSetup: true, provider: OidcProvider.GOOGLE, providerUserId: 'g1', email: 'alice@example.com', accessToken: 'token', refreshToken: null };
+      const pending = {
+        pendingSetup: true,
+        provider: OidcProvider.GOOGLE,
+        providerUserId: 'g1',
+        email: 'alice@example.com',
+        accessToken: 'token',
+        refreshToken: null,
+      };
+      const res = { redirect: jest.fn() };
+      controller.googleCallback({ user: pending }, res as any);
 
-      const result = controller.googleCallback({ user: pending });
-
-      expect(result).toHaveProperty('setup_required', true);
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('setup_token='),
+      );
     });
   });
 
   // ── GET /auth/rezel/callback ────────────────────────────────────────────────
 
   describe('rezelCallback()', () => {
-    it('retourne un JWT si le compte existe', () => {
-      authServiceMock.handleOidcCallback.mockReturnValue({ access_token: 'signed.jwt.token' });
-      const result = controller.rezelCallback({ user: mockUser });
+    it('redirige avec un token si le compte existe', () => {
+      authServiceMock.handleOidcCallback.mockReturnValue({
+        access_token: 'signed.jwt.token',
+      });
+      const res = { redirect: jest.fn() };
+      controller.rezelCallback({ user: mockUser }, res as any);
 
-      expect(result).toHaveProperty('access_token');
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('token='),
+      );
     });
 
-    it('retourne un pending response si premier accès', () => {
+    it('redirige avec setup_token si premier accès', () => {
       authServiceMock.handleOidcCallback.mockReturnValue(mockPendingResponse);
-      const pending = { pendingSetup: true, provider: OidcProvider.REZEL, providerUserId: 'r1', email: 'alice@rezel.net', accessToken: 'token', refreshToken: null };
+      const pending = {
+        pendingSetup: true,
+        provider: OidcProvider.REZEL,
+        providerUserId: 'r1',
+        email: 'alice@rezel.net',
+        accessToken: 'token',
+        refreshToken: null,
+      };
+      const res = { redirect: jest.fn() };
+      controller.rezelCallback({ user: pending }, res as any);
 
-      const result = controller.rezelCallback({ user: pending });
-
-      expect(result).toHaveProperty('setup_required', true);
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('setup_token='),
+      );
     });
   });
 
@@ -125,7 +162,9 @@ describe('AuthController', () => {
 
   describe('oidcSetup()', () => {
     it('délègue au service et retourne le JWT', async () => {
-      authServiceMock.completeOidcSetup.mockResolvedValue({ access_token: 'final.jwt.token' });
+      authServiceMock.completeOidcSetup.mockResolvedValue({
+        access_token: 'final.jwt.token',
+      });
       const dto: OidcSetupDto = {
         setup_token: 'pending.jwt.token',
         username: 'alice42',
@@ -147,7 +186,9 @@ describe('AuthController', () => {
 
   describe('totpRecover()', () => {
     it('appelle recoverWithCode et retourne un JWT', async () => {
-      authServiceMock.recoverWithCode.mockResolvedValue({ access_token: 'recovered.jwt' });
+      authServiceMock.recoverWithCode.mockResolvedValue({
+        access_token: 'recovered.jwt',
+      });
       const dto: TotpRecoverDto = {
         username: 'alice42',
         password: 'P@ss!',
@@ -157,7 +198,11 @@ describe('AuthController', () => {
       const result = await controller.totpRecover(dto);
 
       expect(result.access_token).toBe('recovered.jwt');
-      expect(authServiceMock.recoverWithCode).toHaveBeenCalledWith('alice42', 'P@ss!', 'A1B2-C3D4-E5F6-7890');
+      expect(authServiceMock.recoverWithCode).toHaveBeenCalledWith(
+        'alice42',
+        'P@ss!',
+        'A1B2-C3D4-E5F6-7890',
+      );
     });
   });
 });
