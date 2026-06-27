@@ -13,6 +13,7 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {
     super({
+      apiVersion:   '2',
       clientID:     process.env.DROPBOX_CLIENT_ID     ?? (() => { throw new Error('DROPBOX_CLIENT_ID is not defined'); })(),
       clientSecret: process.env.DROPBOX_CLIENT_SECRET ?? (() => { throw new Error('DROPBOX_CLIENT_SECRET is not defined'); })(),
       callbackURL:  process.env.DROPBOX_CALLBACK_URL  ?? (() => { throw new Error('DROPBOX_CALLBACK_URL is not defined'); })(),

@@ -24,6 +24,7 @@ import {
 import {
   CreateUserDto,
   EnableTotpResponseDto,
+  OidcConnectionDto,
   Role,
   UpdateUserDto,
   UserEntity,
@@ -108,6 +109,35 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 
+  // ─── GET /users/:id/oidc-connections ──────────── self | admin ───────────
+
+  @Get(':id/oidc-connections')
+  @UseGuards(JwtAuthGuard, SelfOrAdminGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Lister les providers OIDC liés au compte' })
+  @ApiOkResponse({ description: 'Liste des connexions OIDC' })
+  async getOidcConnections(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<OidcConnectionDto[]> {
+    return this.usersService.getOidcConnections(id);
+  }
+
+  // ─── DELETE /users/:id/oidc-connections/:provider ─── self | admin ───────
+
+  @Delete(':id/oidc-connections/:provider')
+  @UseGuards(JwtAuthGuard, SelfOrAdminGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Délier un provider OIDC du compte' })
+  @ApiNoContentResponse()
+  @ApiNotFoundResponse({ description: 'Connexion introuvable' })
+  async removeOidcConnection(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('provider') provider: string,
+  ): Promise<void> {
+    return this.usersService.removeOidcConnection(id, provider);
+  }
+
   // ─── POST /users/:id/totp/enable ─────────────── self | admin ───────────
 
   @Post(':id/totp/enable')
@@ -118,8 +148,9 @@ export class UsersController {
   async enableTotp(
     @Param('id', ParseUUIDPipe) id: string,
     @Body('secret') secret: string,
+    @Body('code') code: string,
   ): Promise<EnableTotpResponseDto> {
-    const { user, recoveryCodes } = await this.usersService.enableTotp(id, secret);
+    const { user, recoveryCodes } = await this.usersService.enableTotp(id, secret, code);
     return { user: new UserEntity(user), recovery_codes: recoveryCodes };
   }
 

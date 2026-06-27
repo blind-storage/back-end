@@ -4,11 +4,17 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { createHash, randomBytes } from 'crypto';
+import { verifySync, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib';
+
+function checkTotp(token: string, secret: string): boolean {
+  return verifySync({ token, secret, crypto: new NobleCryptoPlugin(), base32: new ScureBase32Plugin() }).valid;
+}
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
-import { CreateUserDto, UpdateUserDto } from '@blind-storage/types';
+import { CreateUserDto, OidcConnectionDto, UpdateUserDto } from '@blind-storage/types';
 
 // ─── Helpers pour les codes de récupération ──────────────────────���─────────────
 
@@ -152,9 +158,14 @@ export class UsersService {
 
   // ─── TOTP enable (génère les codes de récupération) ────────────────────────
 
-  async enableTotp(id: string, secret: string): Promise<{ user: UserModel; recoveryCodes: string[] }> {
+  async enableTotp(id: string, secret: string, code: string): Promise<{ user: UserModel; recoveryCodes: string[] }> {
     this.logger.log(`Enabling TOTP for user: ${id}`);
     await this.findOne(id);
+
+    if (!checkTotp(code, secret)) {
+      this.logger.warn(`Invalid TOTP verification code for user: ${id}`);
+      throw new UnauthorizedException('Code TOTP invalide — vérifiez que votre application est bien configurée');
+    }
 
     const codes = Array.from({ length: 10 }, generateRecoveryCode);
     const hashes = codes.map(hashRecoveryCode);
@@ -213,6 +224,25 @@ export class UsersService {
 
     this.logger.log(`TOTP recovery codes renewed for user: ${id}`);
     return { user, recoveryCodes: codes };
+  }
+
+  // ─── OIDC connections ──────────────────────────────────────────────────────
+
+  async getOidcConnections(userId: string): Promise<OidcConnectionDto[]> {
+    return this.prisma.oidcConnection.findMany({
+      where: { userId },
+      select: { provider: true, email: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async removeOidcConnection(userId: string, provider: string): Promise<void> {
+    const conn = await this.prisma.oidcConnection.findUnique({
+      where: { userId_provider: { userId, provider: provider as any } },
+    });
+    if (!conn) throw new NotFoundException(`Aucune connexion ${provider} trouvée`);
+    await this.prisma.oidcConnection.delete({ where: { id: conn.id } });
+    this.logger.log(`OIDC connection ${provider} removed for user: ${userId}`);
   }
 
   // ─── Valider et consommer un code de récupération TOTP ────────────────────
