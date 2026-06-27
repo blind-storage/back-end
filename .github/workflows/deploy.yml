@@ -108,6 +108,9 @@ jobs:
       - name: Build types
         run: cd types && npm ci && npm run build
 
+      - name: Copy types into build context
+        run: cp -r types back-end/types
+
       - uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
