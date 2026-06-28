@@ -25,9 +25,13 @@ sequenceDiagram
     U->>U: AES-GCM(KEK_2) → priv_key_enc_2
     U->>U: generateTEK() → TEK (AES-GCM-256 aléatoire)
     U->>U: RSA-OAEP(pub_key, TEK) → tree_enc_key
-    U->>U: AES-GCM(TEK, arbre JSON vide) → encrypted_structure + signature
+    U->>U: AES-GCM(TEK, arbre JSON vide) → encrypted_structure
     U->>B: POST /users { username, email, auth_hash,<br/>  pub_key (SPKI/base64), priv_key_enc_1, priv_key_enc_2,<br/>  salt_mp, salt_rc, tree_enc_key }
     B->>DB: Crée User (auth_hash stocké brut, sans re-hachage)
+    B->>B: computeFingerprint(pub_key) → SHA-256 hex
+    B->>B: Construit BlindCertificate JSON { subject, pub_key, fingerprint, … }
+    B->>B: ECDSA-P256(caPrivKey, JSON.stringify(cert)) → signature (IEEE P1363)
+    B->>DB: UPDATE User SET key_certificate, key_certificate_signature, key_fingerprint
     B-->>U: 201 — Compte créé
     Note over U: RC affiché une seule fois → l'utilisateur le sauvegarde hors ligne<br/>salt_mp et salt_rc → localStorage (blind_salt_<username>)
 ```
@@ -56,7 +60,7 @@ sequenceDiagram
 
 ## 3. Connexion OIDC avec Preuve de Clé (Challenge RSA)
 
-Lorsqu'un utilisateur se connecte via Google/Rezel/Dropbox, le serveur doit vérifier qu'il détient bien la clé privée (et donc connaît son MP) avant d'émettre un JWT complet. Ce flux évite d'envoyer le MP ou la KEK au serveur.
+Lorsqu'un utilisateur se connecte via Google/Dropbox, le serveur doit vérifier qu'il détient bien la clé privée (et donc connaît son MP) avant d'émettre un JWT complet. Ce flux évite d'envoyer le MP ou la KEK au serveur.
 
 ```mermaid
 sequenceDiagram
@@ -64,7 +68,7 @@ sequenceDiagram
     participant B as Backend
     participant P as Fournisseur OIDC
 
-    U->>B: GET /auth/google (ou /rezel, /dropbox)
+    U->>B: GET /auth/google (ou /dropbox)
     B-->>U: Redirect vers le fournisseur
     U->>P: Authentification OIDC
     P-->>B: Callback OAuth2 (code → tokens + profil)
@@ -88,7 +92,42 @@ sequenceDiagram
 
 ---
 
-## 4. Mise à Jour de l'Arbre (UserTree)
+## 4. Vérification du Certificat PKI (côté client)
+
+Déclenchée automatiquement sur la page "Mes clés". Toute la vérification se fait dans le navigateur via le Web Crypto API.
+
+```mermaid
+sequenceDiagram
+    participant U as Navigateur (Web Crypto API)
+    participant B as Backend
+
+    U->>B: GET /pki/ca
+    B-->>U: { pub_key: "<CA PEM>" }
+    U->>B: GET /pki/crl
+    B-->>U: { crl: { revoked: [...] }, signature: "<ECDSA base64>" }
+
+    Note over U: subtle.importKey('spki', caPem) → caKey (ECDSA P-256)
+    U->>U: subtle.verify(ECDSA/SHA-256, caKey, crlSignature, JSON.stringify(crl))
+    Note over U: Si CRL invalide → erreur (CRL falsifiée)
+
+    Note over U: Certificat récupéré depuis le profil utilisateur (GET /users/:id)<br/>via key_certificate + key_certificate_signature
+    U->>U: subtle.verify(ECDSA/SHA-256, caKey, certSignature, JSON.stringify(cert))
+    U->>U: crl.revoked.some(r => r.fingerprint === cert.fingerprint)
+
+    alt Signature valide + non révoqué
+        U->>U: État → "Vérifié CA" ✓
+    else Révoqué
+        U->>U: État → "Révoqué"
+    else Signature invalide
+        U->>U: État → "Signature invalide"
+    end
+```
+
+> Le certificat d'un utilisateur n'a pas de route dédiée : il est renvoyé dans l'objet `User` via `GET /users/:id` dans le champ `key_certificate`.
+
+---
+
+## 5. Mise à Jour de l'Arbre (UserTree)
 
 ```mermaid
 sequenceDiagram
@@ -109,15 +148,15 @@ sequenceDiagram
 
 ---
 
-## 5. Upload et Chiffrement d'un Fichier
+## 6. Upload et Chiffrement d'un Fichier
 
 ```mermaid
 sequenceDiagram
     participant U as Navigateur
     participant B as Backend
-    participant C as Cloud (Dropbox / Google Cloud)
+    participant C as Cloud (Dropbox / Google Drive)
 
-    U->>U: generateTEK() → FEK (AES-GCM-256 aléatoire)
+    U->>U: generateFEK() → FEK (AES-GCM-256 aléatoire)
     U->>U: AES-GCM(FEK) → Fichier_Chiffré
     U->>U: Signature(Fichier_Chiffré) → signature
     U->>U: RSA-OAEP(pub_key, FEK) → enc_fek
@@ -131,7 +170,7 @@ sequenceDiagram
 
 ---
 
-## 6. Partage d'un Fichier
+## 7. Partage d'un Fichier
 
 Le serveur ne voit jamais la FEK en clair — il manipule uniquement des FEK chiffrées par clé publique RSA.
 
@@ -141,8 +180,9 @@ sequenceDiagram
     participant B as Backend
     participant D as Destinataire
 
-    O->>B: GET /users/:destinataireId → pub_key_destinataire
-    B-->>O: pub_key_destinataire (SPKI/base64)
+    O->>B: GET /users/:destinataireId → pub_key + key_certificate + key_certificate_signature
+    B-->>O: pub_key_destinataire + certificat
+    O->>O: Vérifie certificat via CA (flux 4) avant de chiffrer
     O->>B: GET /files/:fileId/permission → enc_fek_owner
     O->>O: RSA-OAEP déchiffre enc_fek_owner → FEK en clair
     O->>O: RSA-OAEP(pub_key_destinataire, FEK) → enc_fek_destinataire
@@ -161,7 +201,26 @@ sequenceDiagram
 
 ---
 
-## 7. Changement de Mot de Passe Maître
+## 8. Suppression de Compte et Révocation du Certificat
+
+```mermaid
+sequenceDiagram
+    participant U as Navigateur
+    participant B as Backend
+    participant DB as PostgreSQL
+
+    U->>B: DELETE /users/:id
+    B->>DB: SELECT key_fingerprint FROM User WHERE id = :id
+    B->>DB: INSERT INTO RevokedCertificate { fingerprint, reason: "account_deleted" }
+    B->>DB: Supprime FilePermission, File, UserTree, TotpRecoveryCode, User (transaction)
+    B-->>U: 204
+
+    Note over B,DB: L'entrée RevokedCertificate n'est PAS cascadée avec User<br/>→ le certificat reste révoqué même après suppression du compte
+```
+
+---
+
+## 9. Changement de Mot de Passe Maître
 
 Le re-chiffrement se fait entièrement côté client. Le serveur reçoit uniquement les nouveaux artefacts déjà calculés.
 
@@ -184,7 +243,7 @@ sequenceDiagram
 
 ---
 
-## 8. Récupération de Compte (Code de Récupération)
+## 10. Récupération de Compte (Code de Récupération)
 
 Permet de restaurer l'accès si l'utilisateur perd son appareil et son mot de passe maître.
 
@@ -208,7 +267,7 @@ sequenceDiagram
 
 ---
 
-## 9. Double Facteur TOTP
+## 11. Double Facteur TOTP
 
 ### Activation
 
@@ -222,7 +281,7 @@ sequenceDiagram
     B->>B: Génère 10 codes de récupération (randomBytes, 8 octets chacun)
     B->>B: Stocke SHA-256(code) dans TotpRecoveryCode
     B->>B: totpEnabled = true, totpSecret = secret
-    B-->>U: { recovery_codes: [...] }  ← affichés une seule fois
+    B-->>U: { user, recovery_codes: [...] }  ← affichés une seule fois
 ```
 
 ### Connexion avec TOTP

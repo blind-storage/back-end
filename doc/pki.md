@@ -1,12 +1,12 @@
 # Infrastructure à Clés Publiques (PKI)
 
-Blind Storage repose sur une PKI applicative **sans autorité de certification centrale**. Le backend joue le rôle de **serveur de clés publiques** : il distribue les clés publiques des utilisateurs mais ne peut pas les générer, les révoquer unilatéralement, ni les déchiffrer.
+Blind Storage dispose d'une PKI applicative avec une **CA (Certificate Authority) interne** signant les clés publiques RSA des utilisateurs. Cela permet à n'importe quel client de vérifier l'authenticité d'une clé publique sans faire confiance au serveur au moment de la vérification.
 
 ---
 
 ## Architecture des Clés
 
-Chaque utilisateur dispose de **deux paires de clés RSA distinctes** (selon le schéma Prisma) :
+Chaque utilisateur dispose de **deux paires de clés RSA distinctes** :
 
 | Paire | Algorithme | Usage |
 |---|---|---|
@@ -37,6 +37,7 @@ Clé Privée RSA (en clair uniquement en mémoire RAM client)
 └─ déchiffre → tree_enc_key → TEK → arbre UserTree
 
 Clé Publique RSA (stockée en clair en DB, distribuée librement)
+├─ certifiée par la CA → key_certificate + key_certificate_signature
 ├─ chiffre → FEK → enc_fek (par fichier, par utilisateur)
 ├─ chiffre → TEK → tree_enc_key
 └─ chiffre → nonce OIDC (challenge serveur)
@@ -47,6 +48,104 @@ TEK (AES-GCM-256, généré à l'inscription)
 FEK (AES-GCM-256, généré par fichier)
 └─ chiffre → contenu du fichier (stocké sur cloud tiers)
 ```
+
+---
+
+## CA (Certificate Authority)
+
+La CA est une paire de clés **ECDSA P-256** dont la clé privée est stockée uniquement en variable d'environnement (`CA_PRIVATE_KEY`), jamais en base de données.
+
+| Paramètre | Valeur |
+|---|---|
+| Algorithme | ECDSA P-256 (secp256r1) |
+| Hash | SHA-256 |
+| Format de signature | IEEE P1363 — 64 octets bruts (r ‖ s) |
+| Validité des certificats émis | 2 ans |
+
+> Le format IEEE P1363 (et non DER/ASN.1) est utilisé pour être directement consommable par le Web Crypto API (`subtle.verify`) sans parsing intermédiaire.
+
+---
+
+## Format du Certificat (BlindCertificate)
+
+Format JSON propriétaire (pas X.509). La signature porte sur `JSON.stringify(cert)`.
+
+```json
+{
+  "version": 1,
+  "subject": {
+    "id": "uuid-utilisateur",
+    "username": "alice",
+    "email": "alice@example.com"
+  },
+  "pub_key": "<clé RSA-OAEP 2048 en SPKI base64>",
+  "fingerprint": "<SHA-256 hex de pub_key>",
+  "issued_at": "2026-06-29T10:00:00.000Z",
+  "expires_at": "2028-06-29T10:00:00.000Z"
+}
+```
+
+Le certificat est stocké dans le champ `key_certificate` (JSONB) de la table `User` et renvoyé par `GET /users/:id`.
+
+---
+
+## Cycle de Vie d'un Certificat
+
+**Émission** — à la création du compte (inscription classique ou OIDC) :
+1. Le client génère une paire RSA-OAEP 2048 côté navigateur.
+2. Le client envoie la clé publique au serveur.
+3. Le serveur calcule l'empreinte SHA-256, construit le JSON du certificat, le signe avec la clé privée CA.
+4. Le certificat, la signature et l'empreinte sont stockés dans la table `User`.
+
+**Révocation** — à la suppression du compte :
+1. Le serveur insère l'empreinte dans `RevokedCertificate` (raison : `account_deleted`).
+2. Puis supprime le compte.
+3. L'entrée de révocation **survit** à la suppression (non cascadée, intentionnel).
+
+---
+
+## CRL (Certificate Revocation List)
+
+La CRL est un JSON signé par la CA, accessible publiquement sans authentification.
+
+```json
+{
+  "version": 1,
+  "issued_at": "2026-06-29T10:00:00.000Z",
+  "revoked": [
+    {
+      "fingerprint": "<SHA-256 hex>",
+      "revoked_at": "2026-06-01T...",
+      "reason": "account_deleted"
+    }
+  ]
+}
+```
+
+La signature de la CRL elle-même est vérifiable côté client — un attaquant ne peut pas forger une CRL vide.
+
+---
+
+## Routes PKI
+
+| Route | Auth | Réponse |
+|---|---|---|
+| `GET /pki/ca` | Aucune | `{ pub_key: string }` — clé publique CA en PEM |
+| `GET /pki/crl` | Aucune | `{ crl: BlindCrl, signature: string }` — CRL signée |
+| `GET /users/:id` | JWT | Inclut `key_certificate`, `key_certificate_signature`, `key_fingerprint` |
+
+> Il n'existe pas de route dédiée pour récupérer le certificat d'un utilisateur : il est renvoyé directement dans l'objet `User`.
+
+---
+
+## Vérification Côté Client (Zero-Trust)
+
+La vérification se fait entièrement dans le navigateur via le **Web Crypto API**, sans bibliothèque externe :
+
+1. `GET /pki/ca` → importer la clé publique CA avec `subtle.importKey('spki', ..., { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])`
+2. `GET /pki/crl` → vérifier la signature de la CRL avec la clé CA
+3. Vérifier la signature du certificat : `subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, caKey, signature, JSON.stringify(cert))`
+4. Vérifier que `cert.fingerprint` n'est pas dans `crl.revoked`
 
 ---
 
@@ -62,6 +161,9 @@ FEK (AES-GCM-256, généré par fichier)
 | `salt_mp` | `String?` | Sel PBKDF2 pour la dérivation du MP (32 octets, base64) |
 | `salt_rc` | `String?` | Sel PBKDF2 pour la dérivation du RC (32 octets, base64) |
 | `tree_enc_key` | `String UNIQUE` | TEK chiffré avec `pub_key` via RSA-OAEP (base64) |
+| `key_certificate` | `Json?` | BlindCertificate signé par la CA (JSONB) |
+| `key_certificate_signature` | `String?` | Signature ECDSA P-256 du certificat (base64, IEEE P1363) |
+| `key_fingerprint` | `String?` | SHA-256 hex de `pub_key` (index unique, utilisé pour la CRL) |
 
 ### Clé de signature (schéma présent, implémentation à venir)
 
@@ -70,35 +172,34 @@ FEK (AES-GCM-256, généré par fichier)
 | `sign_pub_key` | `String?` | Clé publique de signature (SPKI/base64) |
 | `sign_priv_key_enc_1` | `String?` | Clé privée de signature chiffrée par KEK_1 |
 | `sign_priv_key_enc_2` | `String?` | Clé privée de signature chiffrée par KEK_2 |
-| `key_certificate` | `Json?` | Certificat de clé (format JSON, structure à définir) |
-| `key_certificate_signature` | `String?` | Signature du certificat (auto-signée ou par un admin) |
-| `key_fingerprint` | `String?` | Empreinte de la clé publique (pour identification rapide) |
+
+### Table RevokedCertificate
+
+| Champ | Type | Description |
+|---|---|---|
+| `id` | `String` | UUID |
+| `fingerprint` | `String UNIQUE` | SHA-256 hex de la clé publique révoquée |
+| `reason` | `String` | Raison (`account_deleted`, …) |
+| `revokedAt` | `DateTime` | Date de révocation |
 
 ---
 
-## Rôle du Serveur comme Key Server
-
-Le backend est un **serveur de clés publiques non-certifié** :
-
-- **Distribue** `pub_key` à tout utilisateur authentifié via `GET /users/:id`.
-- **Stocke** les clés privées **chiffrées** uniquement — ne peut pas les déchiffrer.
-- **Vérifie** les signatures sur les blobs et les arborescences pour garantir l'intégrité (le serveur ne peut pas forger de signatures sans la clé privée du client).
-- **Chiffre** les challenges OIDC avec la `pub_key` de l'utilisateur via `node:crypto.publicEncrypt` (RSA-OAEP, SHA-256).
-
-### Modèle de confiance
+## Modèle de Confiance
 
 ```
-Utilisateur A  ──── pub_key_A (en clair) ───►  Backend
-                                                    │
-Utilisateur B  ◄─── pub_key_A ────────────────────┘
+Utilisateur A  ──── pub_key_A (en clair) ───►  Backend (CA)
+                                                    │ signe cert_A
+Utilisateur B  ◄─── cert_A + signature ────────────┘
     │
+    └─ vérifie signature avec pub_key_CA (GET /pki/ca)
+    └─ vérifie fingerprint vs CRL (GET /pki/crl)
     └─ RSA-OAEP(pub_key_A, FEK) → enc_fek envoyé au backend
                                         │
 Utilisateur A  ◄─── enc_fek ────────────┘
     └─ RSA-OAEP déchiffre avec priv_key_A → FEK → fichier
 ```
 
-> Le backend ne peut pas lire `enc_fek` car il ne détient pas `priv_key_A` en clair. La confiance repose sur l'authenticité de `pub_key_A` distribuée par le serveur — un attaquant contrôlant la DB pourrait substituer une clé publique (TOFU attack). Des certificats (`key_certificate`) sont prévus pour mitiger ce risque.
+> Le backend ne peut pas lire `enc_fek` car il ne détient pas `priv_key_A` en clair. La CA garantit l'authenticité de `pub_key_A` — un attaquant contrôlant la DB ne peut pas substituer une clé publique sans invalider la signature CA.
 
 ---
 

@@ -1,6 +1,6 @@
 # Authentification
 
-Ce document décrit les flux d'inscription, de connexion locale, de connexion via fournisseur OIDC (Google, Rezel, Dropbox) et de double facteur (TOTP).
+Ce document décrit les flux d'inscription, de connexion locale, de connexion via fournisseur OIDC (Google, Dropbox) et de double facteur (TOTP).
 
 ---
 
@@ -28,11 +28,11 @@ Ce document décrit les flux d'inscription, de connexion locale, de connexion vi
 
 ### `OidcConnection`
 
-Un utilisateur peut avoir au plus une connexion par fournisseur (`GOOGLE`, `REZEL` ou `DROPBOX`).
+Un utilisateur peut avoir au plus une connexion par fournisseur (`GOOGLE` ou `DROPBOX`).
 
 | Champ | Description |
 |---|---|
-| `provider` | `GOOGLE`, `REZEL` ou `DROPBOX` |
+| `provider` | `GOOGLE` ou `DROPBOX` |
 | `providerUserId` | Identifiant chez le fournisseur |
 | `email` | Email retourné par le fournisseur |
 | `accessToken` / `refreshToken` | Tokens OAuth2 |
@@ -104,16 +104,15 @@ sequenceDiagram
 
 ---
 
-## Connexion OIDC (Google / Rezel / Dropbox)
+## Connexion OIDC (Google / Dropbox)
 
-Trois fournisseurs sont supportés.
+Deux fournisseurs sont supportés.
 
 ### Variables d'environnement requises
 
 | Fournisseur | Variables |
 |---|---|
 | Google | `GOOGLE_CLIENT_ID`, `GOOGLE_SECRET`, `GOOGLE_CALLBACK_URL` |
-| Rezel | `REZEL_CLIENT_ID`, `REZEL_SECRET`, `REZEL_CALLBACK_URL`, `REZEL_ISSUER_URL`, `REZEL_AUTH_URL`, `REZEL_TOKEN_URL`, `REZEL_USERINFO_URL` |
 | Dropbox | `DROPBOX_CLIENT_ID`, `DROPBOX_CLIENT_SECRET`, `DROPBOX_CALLBACK_URL` |
 
 ### Cas 1 — Connexion OIDC existante
@@ -124,7 +123,7 @@ sequenceDiagram
     participant S as Serveur
     participant F as Fournisseur
 
-    C->>S: GET /auth/google (ou /rezel ou /dropbox)
+    C->>S: GET /auth/google (ou /dropbox)
     S-->>C: Redirect vers le fournisseur
     C->>F: Authentification
     F-->>S: Callback avec code
@@ -277,8 +276,6 @@ Body: { "username": "...", "password": "<auth_hash>", "recovery_code": "XXXX-XXX
 | `GET` | `/auth/profile` | JWT | Profil depuis le token |
 | `GET` | `/auth/google` | Google | Initie l'OAuth2 Google |
 | `GET` | `/auth/google/callback` | Google | Callback Google |
-| `GET` | `/auth/rezel` | Rezel | Initie l'OIDC Rezel |
-| `GET` | `/auth/rezel/callback` | Rezel | Callback Rezel |
 | `GET` | `/auth/dropbox` | Dropbox | Initie l'OAuth2 Dropbox |
 | `GET` | `/auth/dropbox/callback` | Dropbox | Callback Dropbox |
 | `POST` | `/auth/oidc/setup` | Aucun | Crée un compte depuis un `setup_token` OIDC |
@@ -309,7 +306,6 @@ Body: { "username": "...", "password": "<auth_hash>", "recovery_code": "XXXX-XXX
 | `JwtAuthGuard` | Valide le Bearer token JWT |
 | `LocalAuthGuard` | Valide `username` + `auth_hash` via `timingSafeEqual` |
 | `GoogleAuthGuard` | Délègue à Passport pour le flux OAuth2 Google |
-| `RezelAuthGuard` | Délègue à Passport pour le flux OIDC Rezel |
 | `DropboxAuthGuard` | Délègue à Passport pour le flux OAuth2 Dropbox |
 | `RolesGuard` | Vérifie le rôle (`ADMIN` requis) |
 | `SelfOrAdminGuard` | Autorise si `req.user.sub === :id` ou rôle `ADMIN` |
