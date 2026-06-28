@@ -9,6 +9,7 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/User.js'
+export type * from './models/Folder.js'
 export type * from './models/TotpRecoveryCode.js'
 export type * from './models/OidcConnection.js'
 export type * from './models/UserTree.js'

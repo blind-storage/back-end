@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -62,6 +63,37 @@ export class UsersController {
   async findAll(): Promise<UserEntity[]> {
     const users = await this.usersService.findAll();
     return users.map((u) => new UserEntity(u));
+  }
+
+  // ─── GET /users/lookup ─────────────────────── authentifié ───────────────
+
+  @Get('lookup')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Rechercher un utilisateur par email ou username pour récupérer sa clé publique' })
+  @ApiOkResponse({ type: UserEntity })
+  @ApiNotFoundResponse({ description: 'Utilisateur introuvable' })
+  async lookup(@Query('q') q: string): Promise<{
+    id: string;
+    email: string;
+    username: string;
+    pub_key: string;
+    sign_pub_key: string | null;
+    key_certificate: unknown;
+    key_certificate_signature: string | null;
+    key_fingerprint: string | null;
+  }> {
+    const user = await this.usersService.lookup(q);
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      pub_key: user.pub_key,
+      sign_pub_key: (user as any).sign_pub_key ?? null,
+      key_certificate: (user as any).key_certificate ?? null,
+      key_certificate_signature: (user as any).key_certificate_signature ?? null,
+      key_fingerprint: (user as any).key_fingerprint ?? null,
+    };
   }
 
   // ─── GET /users/:id ─────────────────────────── authentifié ──────────────

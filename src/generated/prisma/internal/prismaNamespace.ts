@@ -385,6 +385,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   User: 'User',
+  Folder: 'Folder',
   TotpRecoveryCode: 'TotpRecoveryCode',
   OidcConnection: 'OidcConnection',
   UserTree: 'UserTree',
@@ -406,7 +407,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "totpRecoveryCode" | "oidcConnection" | "userTree" | "file" | "filePermission" | "fileVersion"
+    modelProps: "user" | "folder" | "totpRecoveryCode" | "oidcConnection" | "userTree" | "file" | "filePermission" | "fileVersion"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -481,6 +482,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.UserCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UserCountAggregateOutputType> | number
+        }
+      }
+    }
+    Folder: {
+      payload: Prisma.$FolderPayload<ExtArgs>
+      fields: Prisma.FolderFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FolderFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FolderFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload>
+        }
+        findFirst: {
+          args: Prisma.FolderFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FolderFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload>
+        }
+        findMany: {
+          args: Prisma.FolderFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload>[]
+        }
+        create: {
+          args: Prisma.FolderCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload>
+        }
+        createMany: {
+          args: Prisma.FolderCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FolderCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload>[]
+        }
+        delete: {
+          args: Prisma.FolderDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload>
+        }
+        update: {
+          args: Prisma.FolderUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload>
+        }
+        deleteMany: {
+          args: Prisma.FolderDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FolderUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FolderUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload>[]
+        }
+        upsert: {
+          args: Prisma.FolderUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FolderPayload>
+        }
+        aggregate: {
+          args: Prisma.FolderAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFolder>
+        }
+        groupBy: {
+          args: Prisma.FolderGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FolderGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FolderCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FolderCountAggregateOutputType> | number
         }
       }
     }
@@ -979,11 +1054,30 @@ export const UserScalarFieldEnum = {
   priv_key_enc_1: 'priv_key_enc_1',
   priv_key_enc_2: 'priv_key_enc_2',
   tree_enc_key: 'tree_enc_key',
+  sign_pub_key: 'sign_pub_key',
+  sign_priv_key_enc_1: 'sign_priv_key_enc_1',
+  sign_priv_key_enc_2: 'sign_priv_key_enc_2',
+  key_certificate: 'key_certificate',
+  key_certificate_signature: 'key_certificate_signature',
+  key_fingerprint: 'key_fingerprint',
   totpSecret: 'totpSecret',
   totpEnabled: 'totpEnabled'
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const FolderScalarFieldEnum = {
+  id: 'id',
+  ownerId: 'ownerId',
+  name: 'name',
+  parentId: 'parentId',
+  providerId: 'providerId',
+  provider: 'provider',
+  createdAt: 'createdAt'
+} as const
+
+export type FolderScalarFieldEnum = (typeof FolderScalarFieldEnum)[keyof typeof FolderScalarFieldEnum]
 
 
 export const TotpRecoveryCodeScalarFieldEnum = {
@@ -1028,7 +1122,8 @@ export const FileScalarFieldEnum = {
   id: 'id',
   createdAt: 'createdAt',
   cloud_data: 'cloud_data',
-  ownerId: 'ownerId'
+  ownerId: 'ownerId',
+  folderId: 'folderId'
 } as const
 
 export type FileScalarFieldEnum = (typeof FileScalarFieldEnum)[keyof typeof FileScalarFieldEnum]
@@ -1068,6 +1163,14 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const JsonNullValueInput = {
   JsonNull: JsonNull
 } as const
@@ -1083,14 +1186,6 @@ export const QueryMode = {
 export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
 
 
-export const NullsOrder = {
-  first: 'first',
-  last: 'last'
-} as const
-
-export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
-
-
 export const JsonNullValueFilter = {
   DbNull: DbNull,
   JsonNull: JsonNull,
@@ -1098,6 +1193,14 @@ export const JsonNullValueFilter = {
 } as const
 
 export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const NullsOrder = {
+  first: 'first',
+  last: 'last'
+} as const
+
+export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 
@@ -1135,6 +1238,20 @@ export type ListEnumRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
@@ -1166,20 +1283,6 @@ export type EnumOidcProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'OidcProvider[]'
  */
 export type ListEnumOidcProviderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OidcProvider[]'>
-    
-
-
-/**
- * Reference to a field of type 'Json'
- */
-export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
-    
-
-
-/**
- * Reference to a field of type 'QueryMode'
- */
-export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -1321,6 +1424,7 @@ export type PrismaClientOptions = ({
 }
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
+  folder?: Prisma.FolderOmit
   totpRecoveryCode?: Prisma.TotpRecoveryCodeOmit
   oidcConnection?: Prisma.OidcConnectionOmit
   userTree?: Prisma.UserTreeOmit

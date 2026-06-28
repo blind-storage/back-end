@@ -363,10 +363,6 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
-}
-
 export type TotpRecoveryCodeCreateWithoutUserInput = {
   id?: string
   codeHash: string

@@ -29,9 +29,13 @@ const usersServiceMock = {
   create: jest.fn(),
   findAll: jest.fn(),
   findOne: jest.fn(),
+  countRemainingRecoveryCodes: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
+  getOidcConnections: jest.fn(),
+  removeOidcConnection: jest.fn(),
   enableTotp: jest.fn(),
+  renewRecoveryCodes: jest.fn(),
   disableTotp: jest.fn(),
 };
 
@@ -101,6 +105,7 @@ describe('UsersController', () => {
   describe('findOne()', () => {
     it("retourne l'utilisateur correspondant", async () => {
       usersServiceMock.findOne.mockResolvedValue(mockUser);
+      usersServiceMock.countRemainingRecoveryCodes.mockResolvedValue(0);
 
       const result = await controller.findOne('uuid-1');
 
@@ -109,6 +114,7 @@ describe('UsersController', () => {
 
     it('propage NotFoundException du service', async () => {
       usersServiceMock.findOne.mockRejectedValue(new NotFoundException());
+      usersServiceMock.countRemainingRecoveryCodes.mockResolvedValue(0);
 
       await expect(controller.findOne('bad-id')).rejects.toThrow(NotFoundException);
     });
@@ -147,11 +153,11 @@ describe('UsersController', () => {
       const codes = ['A1B2-C3D4-E5F6-7890', 'FFFF-EEEE-DDDD-CCCC'];
       usersServiceMock.enableTotp.mockResolvedValue({ user: { ...mockUser, totpEnabled: true }, recoveryCodes: codes });
 
-      const result = await controller.enableTotp('uuid-1', 'TOTP_SECRET');
+      const result = await controller.enableTotp('uuid-1', 'TOTP_SECRET', '123456');
 
       expect(result.user.totpEnabled).toBe(true);
       expect(result.recovery_codes).toHaveLength(2);
-      expect(usersServiceMock.enableTotp).toHaveBeenCalledWith('uuid-1', 'TOTP_SECRET');
+      expect(usersServiceMock.enableTotp).toHaveBeenCalledWith('uuid-1', 'TOTP_SECRET', '123456');
     });
   });
 

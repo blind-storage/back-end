@@ -10,6 +10,7 @@ import { OidcProvider } from '../../generated/prisma/enums';
 const DROPBOX_SCOPES = [
   'account_info.read',
   'files.metadata.read',
+  'files.metadata.write',
   'files.content.write',
   'files.content.read',
 ];
@@ -85,13 +86,44 @@ export class DropboxService implements CloudStorageProvider {
     });
   }
 
-  private buildPath(userId: string, fileName?: string): string {
-    return fileName ? `/${userId}/${fileName}` : `/${userId}`;
+  private buildPath(fileName?: string): string {
+    return fileName ? `/Blind Storage/${fileName}` : '/Blind Storage';
   }
 
-  async uploadFile(fileName: string, fileBuffer: Buffer, _mimeType: string, userId: string): Promise<string> {
+  private joinPath(parentPath: string, name: string): string {
+    return `${parentPath.replace(/\/$/, '')}/${name}`;
+  }
+
+  private basename(path: string): string {
+    return path.split('/').filter(Boolean).pop() ?? path;
+  }
+
+  private dirname(path: string): string {
+    const parts = path.split('/').filter(Boolean);
+    parts.pop();
+    return parts.length ? `/${parts.join('/')}` : '';
+  }
+
+  private async ensureRootFolder(dbx: Dropbox): Promise<string> {
+    const path = this.buildPath();
+    try {
+      await dbx.filesGetMetadata({ path });
+    } catch {
+      await dbx.filesCreateFolderV2({ path, autorename: false });
+    }
+    return path;
+  }
+
+  async uploadFile(
+    fileName: string,
+    fileBuffer: Buffer,
+    _mimeType: string,
+    userId: string,
+    parentId?: string | null,
+  ): Promise<string> {
     const dbx = await this.getClient(userId);
-    const path = this.buildPath(userId, fileName);
+    const parentPath = parentId ?? (await this.ensureRootFolder(dbx));
+    const path = this.joinPath(parentPath, fileName);
 
     const response = await dbx.filesUpload({
       path,
@@ -104,6 +136,58 @@ export class DropboxService implements CloudStorageProvider {
       audit: { action: 'DROPBOX_UPLOAD', userId, path: response.result.path_display },
     });
     return response.result.path_display!;
+  }
+
+  async replaceFile(
+    providerId: string,
+    fileBuffer: Buffer,
+    _mimeType: string,
+    userId: string,
+  ): Promise<string> {
+    const dbx = await this.getClient(userId);
+    const response = await dbx.filesUpload({
+      path: providerId,
+      contents: fileBuffer,
+      mode: { '.tag': 'overwrite' },
+    });
+
+    this.logger.info('File replaced in Dropbox', {
+      context: DropboxService.name,
+      audit: { action: 'DROPBOX_REPLACE', userId, path: response.result.path_display },
+    });
+    return response.result.path_display ?? providerId;
+  }
+
+  async createFolder(name: string, parentId: string | null, userId: string): Promise<string> {
+    const dbx = await this.getClient(userId);
+    const parentPath = parentId ?? (await this.ensureRootFolder(dbx));
+    const path = this.joinPath(parentPath, name);
+    const response = await dbx.filesCreateFolderV2({ path, autorename: false });
+    return response.result.metadata.path_display ?? path;
+  }
+
+  async renameItem(providerId: string, newName: string, userId: string): Promise<string> {
+    const dbx = await this.getClient(userId);
+    const parentPath = this.dirname(providerId);
+    const toPath = this.joinPath(parentPath, newName);
+    const response = await dbx.filesMoveV2({
+      from_path: providerId,
+      to_path: toPath,
+      autorename: false,
+    });
+    return response.result.metadata.path_display ?? toPath;
+  }
+
+  async moveItem(providerId: string, newParentId: string | null, userId: string): Promise<string> {
+    const dbx = await this.getClient(userId);
+    const parentPath = newParentId ?? (await this.ensureRootFolder(dbx));
+    const toPath = this.joinPath(parentPath, this.basename(providerId));
+    const response = await dbx.filesMoveV2({
+      from_path: providerId,
+      to_path: toPath,
+      autorename: false,
+    });
+    return response.result.metadata.path_display ?? toPath;
   }
 
   async downloadFile(fileId: string, userId: string): Promise<Buffer> {
@@ -123,7 +207,7 @@ export class DropboxService implements CloudStorageProvider {
 
   async listFiles(userId: string): Promise<FileMetadata[]> {
     const dbx = await this.getClient(userId);
-    const path = this.buildPath(userId);
+    const path = await this.ensureRootFolder(dbx);
 
     try {
       const response = await dbx.filesListFolder({ path });

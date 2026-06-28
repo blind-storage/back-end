@@ -45,6 +45,11 @@ export { Prisma }
  */
 export type User = Prisma.UserModel
 /**
+ * Model Folder
+ * 
+ */
+export type Folder = Prisma.FolderModel
+/**
  * Model TotpRecoveryCode
  * 
  */

@@ -24,7 +24,15 @@ export interface CloudStorageProvider {
     fileBuffer: Buffer,
     mimeType: string,
     userId: string,
+    parentId?: string | null, // dossier de destination chez le provider (Google Drive)
   ): Promise<string>; // retourne l'ID du fichier chez le provider
+
+  replaceFile(
+    providerId: string,
+    fileBuffer: Buffer,
+    mimeType: string,
+    userId: string,
+  ): Promise<string>; // retourne l'ID/path potentiellement mis à jour chez le provider
 
   downloadFile(fileId: string, userId: string): Promise<Buffer>;
 

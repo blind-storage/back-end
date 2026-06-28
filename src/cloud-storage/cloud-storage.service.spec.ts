@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
@@ -41,31 +41,61 @@ const prismaMock = {
     create: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    update: jest.fn(),
     delete: jest.fn(),
   },
   filePermission: {
     findUnique: jest.fn(),
+    findMany: jest.fn(),
+    upsert: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  fileVersion: {
+    deleteMany: jest.fn(),
+  },
+  folder: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
   },
   oidcConnection: {
     findMany: jest.fn(),
     upsert: jest.fn(),
   },
+  user: {
+    findUnique: jest.fn(),
+  },
+  // La suppression fiabilisée retire les lignes filles puis le fichier dans une transaction.
+  $transaction: jest.fn((ops: any[]) => Promise.all(ops)),
 };
 
 const googleDriveMock = {
   uploadFile: jest.fn(),
+  replaceFile: jest.fn(),
   downloadFile: jest.fn(),
   deleteFile: jest.fn(),
   listFiles: jest.fn(),
+  getRootFolderId: jest.fn(),
+  createFolder: jest.fn(),
+  renameItem: jest.fn(),
+  moveItem: jest.fn(),
   getConnectAuthUrl: jest.fn(),
   exchangeConnectCode: jest.fn(),
 };
 
 const dropboxMock = {
   uploadFile: jest.fn(),
+  replaceFile: jest.fn(),
   downloadFile: jest.fn(),
   deleteFile: jest.fn(),
   listFiles: jest.fn(),
+  createFolder: jest.fn(),
+  renameItem: jest.fn(),
+  moveItem: jest.fn(),
   getConnectAuthUrl: jest.fn(),
   exchangeConnectCode: jest.fn(),
 };
@@ -113,7 +143,7 @@ describe('CloudStorageService', () => {
         'google-drive', 'test.pdf', Buffer.from('data'), 'application/pdf', 'user-uuid-1', 'enc-fek',
       );
 
-      expect(googleDriveMock.uploadFile).toHaveBeenCalledWith('test.pdf', expect.any(Buffer), 'application/pdf', 'user-uuid-1');
+      expect(googleDriveMock.uploadFile).toHaveBeenCalledWith('test.pdf', expect.any(Buffer), 'application/pdf', 'user-uuid-1', null);
       expect(prismaMock.file.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           ownerId: 'user-uuid-1',
@@ -136,7 +166,7 @@ describe('CloudStorageService', () => {
         'dropbox', 'test.txt', Buffer.from('data'), 'text/plain', 'user-uuid-1', 'enc-fek',
       );
 
-      expect(dropboxMock.uploadFile).toHaveBeenCalledWith('test.txt', expect.any(Buffer), 'text/plain', 'user-uuid-1');
+      expect(dropboxMock.uploadFile).toHaveBeenCalledWith('test.txt', expect.any(Buffer), 'text/plain', 'user-uuid-1', null);
       expect(result.fileId).toBe('file-uuid-1');
     });
 
@@ -146,6 +176,69 @@ describe('CloudStorageService', () => {
       ).rejects.toThrow(BadRequestException);
 
       expect(prismaMock.file.create).not.toHaveBeenCalled();
+    });
+
+    it('remplace un fichier en conservant les partages existants', async () => {
+      prismaMock.file.findMany.mockResolvedValue([makeFile({ folderId: null })]);
+      prismaMock.file.findUnique.mockResolvedValue(makeFile({ ownerId: 'user-uuid-1', folderId: null }));
+      googleDriveMock.replaceFile.mockResolvedValue('gdrive-id-1');
+      prismaMock.file.update.mockResolvedValue(makeFile());
+      prismaMock.filePermission.update.mockResolvedValue(makePermission({ userId: 'user-uuid-1' }));
+
+      const result = await service.uploadFile(
+        'google-drive',
+        'test.pdf',
+        Buffer.from('new-data'),
+        'application/pdf',
+        'user-uuid-1',
+        'same-owner-enc-fek',
+        null,
+        'sig-new',
+        'file-uuid-1',
+        'preserve',
+      );
+
+      expect(googleDriveMock.replaceFile).toHaveBeenCalledWith('gdrive-id-1', expect.any(Buffer), 'application/pdf', 'user-uuid-1');
+      expect(prismaMock.filePermission.deleteMany).not.toHaveBeenCalled();
+      expect(prismaMock.filePermission.update).toHaveBeenCalledWith({
+        where: { fileId_userId: { fileId: 'file-uuid-1', userId: 'user-uuid-1' } },
+        data: { enc_fek: 'same-owner-enc-fek', read: true, write: true, grantedById: 'user-uuid-1' },
+      });
+      expect(result.fileId).toBe('file-uuid-1');
+    });
+
+    it('remplace un fichier avec rotation de FEK et conserve seulement les destinataires fournis', async () => {
+      prismaMock.file.findMany.mockResolvedValue([makeFile({ folderId: null })]);
+      prismaMock.file.findUnique.mockResolvedValue(makeFile({ ownerId: 'user-uuid-1', folderId: null }));
+      googleDriveMock.replaceFile.mockResolvedValue('gdrive-id-1');
+      prismaMock.file.update.mockResolvedValue(makeFile());
+      prismaMock.filePermission.update.mockResolvedValue(makePermission());
+      prismaMock.filePermission.deleteMany.mockResolvedValue({ count: 1 });
+
+      await service.uploadFile(
+        'google-drive',
+        'test.pdf',
+        Buffer.from('new-data'),
+        'application/pdf',
+        'user-uuid-1',
+        'new-owner-enc-fek',
+        null,
+        'sig-new',
+        'file-uuid-1',
+        'rotate',
+        [{ userId: 'user-uuid-2', enc_fek: 'new-recipient-enc-fek' }],
+      );
+
+      expect(prismaMock.filePermission.deleteMany).toHaveBeenCalledWith({
+        where: {
+          fileId: 'file-uuid-1',
+          userId: { not: 'user-uuid-1', notIn: ['user-uuid-2'] },
+        },
+      });
+      expect(prismaMock.filePermission.update).toHaveBeenCalledWith({
+        where: { fileId_userId: { fileId: 'file-uuid-1', userId: 'user-uuid-2' } },
+        data: { enc_fek: 'new-recipient-enc-fek' },
+      });
     });
   });
 
@@ -205,6 +298,7 @@ describe('CloudStorageService', () => {
       expect(prismaMock.filePermission.findUnique).toHaveBeenCalledWith({
         where: { fileId_userId: { fileId: 'file-uuid-1', userId: 'user-uuid-2' } },
       });
+      expect(googleDriveMock.downloadFile).toHaveBeenCalledWith('gdrive-id-1', 'user-uuid-1');
       expect(result).toBe(fileBuffer);
     });
 
@@ -283,6 +377,311 @@ describe('CloudStorageService', () => {
 
       expect(dropboxMock.deleteFile).toHaveBeenCalledWith('/uid/file.txt', 'user-uuid-1');
       expect(googleDriveMock.deleteFile).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── uploadFile : validation du dossier de destination ─────────────────────────
+
+  describe('uploadFile() — dossier de destination', () => {
+    it('valide le dossier puis enregistre le File avec folderId', async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'fol-1', ownerId: 'user-uuid-1', providerId: 'drive-folder-1' });
+      googleDriveMock.uploadFile.mockResolvedValue('gdrive-id-1');
+      prismaMock.file.create.mockResolvedValue(makeFile());
+
+      await service.uploadFile('google-drive', 'd.pdf', Buffer.from('x'), 'application/octet-stream', 'user-uuid-1', 'enc', 'fol-1');
+
+      expect(googleDriveMock.uploadFile).toHaveBeenCalledWith(
+        'd.pdf',
+        expect.any(Buffer),
+        'application/octet-stream',
+        'user-uuid-1',
+        'drive-folder-1',
+      );
+      expect(prismaMock.file.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ ownerId: 'user-uuid-1', folderId: 'fol-1' }),
+      });
+    });
+
+    it("refuse un dossier appartenant à quelqu'un d'autre (Forbidden)", async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'fol-1', ownerId: 'someone-else' });
+      await expect(
+        service.uploadFile('google-drive', 'd', Buffer.from(''), '', 'user-uuid-1', 'enc', 'fol-1'),
+      ).rejects.toThrow(ForbiddenException);
+      expect(googleDriveMock.uploadFile).not.toHaveBeenCalled();
+    });
+
+    it('refuse un dossier inexistant (NotFound)', async () => {
+      prismaMock.folder.findUnique.mockResolvedValue(null);
+      await expect(
+        service.uploadFile('google-drive', 'd', Buffer.from(''), '', 'user-uuid-1', 'enc', 'bad'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ── browse ─────────────────────────────────────────────────────────────────────
+
+  describe('browse()', () => {
+    it('liste sous-dossiers + fichiers (avec enc_fek) à la racine', async () => {
+      prismaMock.folder.findMany.mockResolvedValue([
+        { id: 'fol-1', name: 'Docs', parentId: null, createdAt: new Date() },
+      ]);
+      prismaMock.file.findMany.mockResolvedValue([
+        makeFile({ folderId: null, permissions: [{ enc_fek: 'k1' }] }),
+      ]);
+
+      const res = await service.browse('user-uuid-1', null);
+
+      expect(res.folder).toBeNull();
+      expect(res.breadcrumb).toEqual([]);
+      expect(res.folders).toHaveLength(1);
+      expect(res.files[0]).toMatchObject({ id: 'file-uuid-1', name: 'test.pdf', enc_fek: 'k1', folderId: null });
+    });
+
+    it("construit le fil d'Ariane dans un sous-dossier", async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'fol-1', name: 'Docs', parentId: null, ownerId: 'user-uuid-1' });
+      prismaMock.folder.findMany.mockResolvedValue([]);
+      prismaMock.file.findMany.mockResolvedValue([]);
+
+      const res = await service.browse('user-uuid-1', 'fol-1');
+
+      expect(res.folder).toMatchObject({ id: 'fol-1', name: 'Docs' });
+      expect(res.breadcrumb).toEqual([{ id: 'fol-1', name: 'Docs' }]);
+    });
+
+    it('refuse un dossier non possédé (Forbidden)', async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'fol-1', ownerId: 'other' });
+      await expect(service.browse('user-uuid-1', 'fol-1')).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ── createFolder ───────────────────────────────────────────────────────────────
+
+  describe('createFolder()', () => {
+    it('crée un dossier (nom trimmé) à la racine', async () => {
+      googleDriveMock.createFolder.mockResolvedValue('drive-folder-1');
+      prismaMock.folder.create.mockResolvedValue({ id: 'fol-1', name: 'Docs', parentId: null, createdAt: new Date() });
+      const res = await service.createFolder('user-uuid-1', '  Docs  ', null);
+      expect(res).toMatchObject({ id: 'fol-1', name: 'Docs' });
+      expect(googleDriveMock.createFolder).toHaveBeenCalledWith('Docs', null, 'user-uuid-1');
+      expect(prismaMock.folder.create).toHaveBeenCalledWith({
+        data: { ownerId: 'user-uuid-1', name: 'Docs', parentId: null, providerId: 'drive-folder-1', provider: 'google-drive' },
+      });
+    });
+
+    it('lève BadRequest si le nom est vide', async () => {
+      await expect(service.createFolder('user-uuid-1', '   ', null)).rejects.toThrow(BadRequestException);
+      expect(prismaMock.folder.create).not.toHaveBeenCalled();
+    });
+
+    it('valide le dossier parent', async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'p', ownerId: 'other' });
+      await expect(service.createFolder('user-uuid-1', 'X', 'p')).rejects.toThrow(ForbiddenException);
+      expect(googleDriveMock.createFolder).not.toHaveBeenCalled();
+    });
+
+    it('crée le dossier Drive sous le providerId du parent', async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'p', ownerId: 'user-uuid-1', providerId: 'drive-parent' });
+      googleDriveMock.createFolder.mockResolvedValue('drive-child');
+      prismaMock.folder.create.mockResolvedValue({ id: 'fol-1', name: 'Child', parentId: 'p', createdAt: new Date() });
+
+      await service.createFolder('user-uuid-1', 'Child', 'p');
+
+      expect(googleDriveMock.createFolder).toHaveBeenCalledWith('Child', 'drive-parent', 'user-uuid-1');
+    });
+  });
+
+  // ── updateFolder (renommer / déplacer) ─────────────────────────────────────────
+
+  describe('updateFolder()', () => {
+    it('renomme (nom trimmé)', async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({
+        id: 'fol-1',
+        ownerId: 'user-uuid-1',
+        parentId: null,
+        providerId: 'drive-folder-1',
+      });
+      prismaMock.folder.update.mockResolvedValue({ id: 'fol-1', name: 'New', parentId: null, createdAt: new Date() });
+
+      await service.updateFolder('user-uuid-1', 'fol-1', { name: '  New  ' });
+
+      expect(googleDriveMock.renameItem).toHaveBeenCalledWith('drive-folder-1', 'New', 'user-uuid-1');
+      expect(prismaMock.folder.update).toHaveBeenCalledWith({ where: { id: 'fol-1' }, data: { name: 'New' } });
+    });
+
+    it('déplace vers un autre dossier', async () => {
+      const tree: Record<string, any> = {
+        'fol-1': { id: 'fol-1', ownerId: 'user-uuid-1', parentId: null, providerId: 'drive-folder-1' },
+        'fol-2': { id: 'fol-2', ownerId: 'user-uuid-1', parentId: null, providerId: 'drive-folder-2' },
+      };
+      prismaMock.folder.findUnique.mockImplementation(({ where }: any) => Promise.resolve(tree[where.id] ?? null));
+      prismaMock.folder.update.mockResolvedValue({ id: 'fol-1', name: 'A', parentId: 'fol-2', createdAt: new Date() });
+
+      await service.updateFolder('user-uuid-1', 'fol-1', { parentId: 'fol-2' });
+
+      expect(googleDriveMock.moveItem).toHaveBeenCalledWith('drive-folder-1', 'drive-folder-2', 'user-uuid-1');
+      expect(prismaMock.folder.update).toHaveBeenCalledWith({ where: { id: 'fol-1' }, data: { parentId: 'fol-2' } });
+    });
+
+    it('empêche un dossier de devenir son propre parent', async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'fol-1', ownerId: 'user-uuid-1', parentId: null });
+      await expect(service.updateFolder('user-uuid-1', 'fol-1', { parentId: 'fol-1' })).rejects.toThrow(BadRequestException);
+    });
+
+    it('empêche un cycle (déplacement dans un descendant)', async () => {
+      const tree: Record<string, any> = {
+        'fol-1': { id: 'fol-1', ownerId: 'user-uuid-1', parentId: null },
+        'fol-2': { id: 'fol-2', ownerId: 'user-uuid-1', parentId: 'fol-1' }, // fol-2 enfant de fol-1
+      };
+      prismaMock.folder.findUnique.mockImplementation(({ where }: any) => Promise.resolve(tree[where.id] ?? null));
+
+      await expect(service.updateFolder('user-uuid-1', 'fol-1', { parentId: 'fol-2' })).rejects.toThrow(BadRequestException);
+      expect(prismaMock.folder.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── deleteFolder (récursif) ────────────────────────────────────────────────────
+
+  describe('deleteFolder()', () => {
+    it('supprime le sous-arbre : fichiers (provider + DB) puis dossiers', async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'fol-1', ownerId: 'user-uuid-1', providerId: 'drive-folder-1' });
+      // BFS : fol-1 a un enfant fol-2, fol-2 n'a pas d'enfant.
+      prismaMock.folder.findMany.mockResolvedValueOnce([{ id: 'fol-2' }]).mockResolvedValueOnce([]);
+      prismaMock.file.findMany.mockResolvedValue([makeFile()]);
+      googleDriveMock.deleteFile.mockResolvedValue(undefined);
+      prismaMock.folder.delete.mockResolvedValue({});
+
+      await service.deleteFolder('user-uuid-1', 'fol-1');
+
+      expect(googleDriveMock.deleteFile).toHaveBeenCalledWith('gdrive-id-1', 'user-uuid-1');
+      expect(googleDriveMock.deleteFile).toHaveBeenCalledWith('drive-folder-1', 'user-uuid-1');
+      expect(prismaMock.file.findMany).toHaveBeenCalledWith({ where: { folderId: { in: ['fol-1', 'fol-2'] } } });
+      expect(prismaMock.folder.delete).toHaveBeenCalledWith({ where: { id: 'fol-1' } });
+    });
+
+    it('refuse un dossier non possédé (Forbidden)', async () => {
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'fol-1', ownerId: 'other' });
+      await expect(service.deleteFolder('user-uuid-1', 'fol-1')).rejects.toThrow(ForbiddenException);
+      expect(prismaMock.folder.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── updateFile (renommer / déplacer) ───────────────────────────────────────────
+
+  describe('updateFile()', () => {
+    it('renomme via cloud_data (nom trimmé)', async () => {
+      prismaMock.file.findUnique.mockResolvedValue(makeFile({ ownerId: 'user-uuid-1' }));
+      prismaMock.file.findMany.mockResolvedValue([]);
+      prismaMock.file.update.mockResolvedValue({});
+
+      await service.updateFile('user-uuid-1', 'file-uuid-1', { name: '  new.pdf  ' });
+
+      expect(googleDriveMock.renameItem).toHaveBeenCalledWith('gdrive-id-1', 'new.pdf', 'user-uuid-1');
+      expect(prismaMock.file.update).toHaveBeenCalledWith({
+        where: { id: 'file-uuid-1' },
+        data: { cloud_data: expect.objectContaining({ name: 'new.pdf', provider: 'google-drive' }) },
+      });
+    });
+
+    it('refuse de renommer avec le nom d’un autre fichier du même dossier', async () => {
+      prismaMock.file.findUnique.mockResolvedValue(makeFile({ ownerId: 'user-uuid-1', folderId: 'fol-1' }));
+      prismaMock.file.findMany.mockResolvedValue([
+        makeFile({
+          id: 'file-uuid-2',
+          ownerId: 'user-uuid-1',
+          folderId: 'fol-1',
+          cloud_data: { provider: 'google-drive', providerId: 'gdrive-id-2', name: 'existing.pdf', mimeType: 'application/pdf' },
+        }),
+      ]);
+
+      await expect(service.updateFile('user-uuid-1', 'file-uuid-1', { name: 'existing.pdf' }))
+        .rejects.toThrow(ConflictException);
+      expect(googleDriveMock.renameItem).not.toHaveBeenCalled();
+      expect(prismaMock.file.update).not.toHaveBeenCalled();
+    });
+
+    it('déplace vers un dossier possédé', async () => {
+      prismaMock.file.findUnique.mockResolvedValue(makeFile({ ownerId: 'user-uuid-1' }));
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'fol-2', ownerId: 'user-uuid-1', providerId: 'drive-folder-2' });
+      prismaMock.file.update.mockResolvedValue({});
+
+      await service.updateFile('user-uuid-1', 'file-uuid-1', { folderId: 'fol-2' });
+
+      expect(googleDriveMock.moveItem).toHaveBeenCalledWith('gdrive-id-1', 'drive-folder-2', 'user-uuid-1');
+      expect(prismaMock.file.update).toHaveBeenCalledWith({ where: { id: 'file-uuid-1' }, data: { folderId: 'fol-2' } });
+    });
+
+    it('refuse un déplacement vers un dossier non possédé (Forbidden)', async () => {
+      prismaMock.file.findUnique.mockResolvedValue(makeFile({ ownerId: 'user-uuid-1' }));
+      prismaMock.folder.findUnique.mockResolvedValue({ id: 'fol-2', ownerId: 'other' });
+
+      await expect(service.updateFile('user-uuid-1', 'file-uuid-1', { folderId: 'fol-2' })).rejects.toThrow(ForbiddenException);
+      expect(prismaMock.file.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── sharing ────────────────────────────────────────────────────────────────
+
+  describe('shareFile()', () => {
+    it('crée une permission avec enc_fek chiffrée pour le destinataire', async () => {
+      prismaMock.file.findUnique.mockResolvedValue(makeFile({ ownerId: 'user-uuid-1' }));
+      prismaMock.user.findUnique.mockResolvedValue({ id: 'user-uuid-2', username: 'bob', email: 'bob@example.test' });
+      prismaMock.filePermission.upsert.mockResolvedValue(
+        makePermission({ userId: 'user-uuid-2', read: true, write: false, grantedAt: new Date('2026-01-02T00:00:00Z') }),
+      );
+
+      const result = await service.shareFile('user-uuid-1', 'file-uuid-1', 'user-uuid-2', 'enc-for-bob');
+
+      expect(prismaMock.filePermission.upsert).toHaveBeenCalledWith({
+        where: { fileId_userId: { fileId: 'file-uuid-1', userId: 'user-uuid-2' } },
+        update: { enc_fek: 'enc-for-bob', read: true, write: false, grantedById: 'user-uuid-1' },
+        create: {
+          fileId: 'file-uuid-1',
+          userId: 'user-uuid-2',
+          enc_fek: 'enc-for-bob',
+          read: true,
+          write: false,
+          grantedById: 'user-uuid-1',
+        },
+      });
+      expect(result).toMatchObject({ userId: 'user-uuid-2', username: 'bob', read: true, write: false });
+    });
+
+    it('refuse le partage par un non-propriétaire', async () => {
+      prismaMock.file.findUnique.mockResolvedValue(makeFile({ ownerId: 'owner' }));
+      prismaMock.user.findUnique.mockResolvedValue({ id: 'user-uuid-2', username: 'bob', email: 'bob@example.test' });
+
+      await expect(service.shareFile('intruder', 'file-uuid-1', 'user-uuid-2', 'enc')).rejects.toThrow(ForbiddenException);
+      expect(prismaMock.filePermission.upsert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listSharedWithMe()', () => {
+    it('retourne les fichiers partagés avec enc_fek du destinataire et propriétaire', async () => {
+      prismaMock.filePermission.findMany.mockResolvedValue([
+        {
+          ...makePermission({ userId: 'user-uuid-2', enc_fek: 'enc-for-me', grantedAt: new Date('2026-01-02T00:00:00Z') }),
+          file: {
+            ...makeFile({ ownerId: 'user-uuid-1', folderId: 'fol-1' }),
+            owner: { id: 'user-uuid-1', username: 'alice', email: 'alice@example.test', sign_pub_key: 'sign-pub' },
+          },
+        },
+      ]);
+
+      const result = await service.listSharedWithMe('user-uuid-2');
+
+      expect(prismaMock.filePermission.findMany).toHaveBeenCalledWith({
+        where: { userId: 'user-uuid-2', read: true, file: { ownerId: { not: 'user-uuid-2' } } },
+        include: {
+          file: { include: { owner: { select: { id: true, username: true, email: true, sign_pub_key: true } } } },
+        },
+        orderBy: { grantedAt: 'desc' },
+      });
+      expect(result[0]).toMatchObject({
+        id: 'file-uuid-1',
+        name: 'test.pdf',
+        enc_fek: 'enc-for-me',
+        owner: { username: 'alice' },
+      });
     });
   });
 

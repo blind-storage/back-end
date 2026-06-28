@@ -23,6 +23,12 @@ model User {
   priv_key_enc_1 String   @unique
   priv_key_enc_2 String   @unique
   tree_enc_key   String   @unique
+  sign_pub_key        String? @unique
+  sign_priv_key_enc_1 String? @unique
+  sign_priv_key_enc_2 String? @unique
+  key_certificate     Json?
+  key_certificate_signature String?
+  key_fingerprint     String? @unique
 
   totpSecret     String?
   totpEnabled    Boolean  @default(false)
@@ -31,9 +37,30 @@ model User {
   totpRecoveryCodes TotpRecoveryCode[]
   userTree          UserTree?
   files             File[]
+  folders           Folder[]
   permissions       FilePermission[] @relation("UserPermissions")
   grantedPerms      FilePermission[] @relation("GrantedPermissions")
   editedVersions    FileVersion[]
+}
+
+// Arborescence virtuelle de dossiers (métadonnées only). Le contenu des fichiers
+// reste chiffré côté client ; ce modèle ne sert qu'à organiser/naviguer.
+model Folder {
+  id         String   @id @default(uuid())
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name       String
+  parentId   String?
+  parent     Folder?  @relation("FolderTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children   Folder[] @relation("FolderTree")
+  files      File[]
+  providerId String?  // ID du dossier miroir chez le provider (Google Drive)
+  provider   String   @default("google-drive")
+  createdAt  DateTime @default(now())
+
+  @@index([ownerId])
+  @@index([parentId])
+  @@index([ownerId, provider])
 }
 
 model TotpRecoveryCode {
@@ -83,7 +110,7 @@ enum OidcProvider {
 model UserTree {
   id                  String @id @default(uuid())
   userId              String @unique
-  user                User   @relation(fields: [userId], references: [id])
+  user                User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   encrypted_structure String
   signature           String
 }
@@ -93,9 +120,14 @@ model File {
   createdAt   DateTime         @default(now())
   cloud_data  Json
   ownerId     String
-  owner       User             @relation(fields: [ownerId], references: [id])
+  owner       User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  folderId    String?
+  folder      Folder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
   permissions FilePermission[]
   versions    FileVersion[]
+
+  @@index([ownerId])
+  @@index([folderId])
 }
 
 model FilePermission {
@@ -108,9 +140,9 @@ model FilePermission {
   grantedById String
   grantedAt   DateTime @default(now())
 
-  file      File @relation(fields: [fileId], references: [id])
-  user      User @relation("UserPermissions", fields: [userId], references: [id])
-  grantedBy User @relation("GrantedPermissions", fields: [grantedById], references: [id])
+  file      File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  user      User @relation("UserPermissions", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy User @relation("GrantedPermissions", fields: [grantedById], references: [id], onDelete: Cascade)
 
   @@unique([fileId, userId])
 }
@@ -123,8 +155,8 @@ model FileVersion {
   signature  String
   editedById String
 
-  file   File @relation(fields: [fileId], references: [id])
-  editor User @relation(fields: [editedById], references: [id])
+  file   File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  editor User @relation(fields: [editedById], references: [id], onDelete: Cascade)
 
   @@unique([fileId, version])
 }

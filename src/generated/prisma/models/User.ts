@@ -36,6 +36,11 @@ export type UserMinAggregateOutputType = {
   priv_key_enc_1: string | null
   priv_key_enc_2: string | null
   tree_enc_key: string | null
+  sign_pub_key: string | null
+  sign_priv_key_enc_1: string | null
+  sign_priv_key_enc_2: string | null
+  key_certificate_signature: string | null
+  key_fingerprint: string | null
   totpSecret: string | null
   totpEnabled: boolean | null
 }
@@ -52,6 +57,11 @@ export type UserMaxAggregateOutputType = {
   priv_key_enc_1: string | null
   priv_key_enc_2: string | null
   tree_enc_key: string | null
+  sign_pub_key: string | null
+  sign_priv_key_enc_1: string | null
+  sign_priv_key_enc_2: string | null
+  key_certificate_signature: string | null
+  key_fingerprint: string | null
   totpSecret: string | null
   totpEnabled: boolean | null
 }
@@ -68,6 +78,12 @@ export type UserCountAggregateOutputType = {
   priv_key_enc_1: number
   priv_key_enc_2: number
   tree_enc_key: number
+  sign_pub_key: number
+  sign_priv_key_enc_1: number
+  sign_priv_key_enc_2: number
+  key_certificate: number
+  key_certificate_signature: number
+  key_fingerprint: number
   totpSecret: number
   totpEnabled: number
   _all: number
@@ -86,6 +102,11 @@ export type UserMinAggregateInputType = {
   priv_key_enc_1?: true
   priv_key_enc_2?: true
   tree_enc_key?: true
+  sign_pub_key?: true
+  sign_priv_key_enc_1?: true
+  sign_priv_key_enc_2?: true
+  key_certificate_signature?: true
+  key_fingerprint?: true
   totpSecret?: true
   totpEnabled?: true
 }
@@ -102,6 +123,11 @@ export type UserMaxAggregateInputType = {
   priv_key_enc_1?: true
   priv_key_enc_2?: true
   tree_enc_key?: true
+  sign_pub_key?: true
+  sign_priv_key_enc_1?: true
+  sign_priv_key_enc_2?: true
+  key_certificate_signature?: true
+  key_fingerprint?: true
   totpSecret?: true
   totpEnabled?: true
 }
@@ -118,6 +144,12 @@ export type UserCountAggregateInputType = {
   priv_key_enc_1?: true
   priv_key_enc_2?: true
   tree_enc_key?: true
+  sign_pub_key?: true
+  sign_priv_key_enc_1?: true
+  sign_priv_key_enc_2?: true
+  key_certificate?: true
+  key_certificate_signature?: true
+  key_fingerprint?: true
   totpSecret?: true
   totpEnabled?: true
   _all?: true
@@ -207,6 +239,12 @@ export type UserGroupByOutputType = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key: string | null
+  sign_priv_key_enc_1: string | null
+  sign_priv_key_enc_2: string | null
+  key_certificate: runtime.JsonValue | null
+  key_certificate_signature: string | null
+  key_fingerprint: string | null
   totpSecret: string | null
   totpEnabled: boolean
   _count: UserCountAggregateOutputType | null
@@ -244,12 +282,19 @@ export type UserWhereInput = {
   priv_key_enc_1?: Prisma.StringFilter<"User"> | string
   priv_key_enc_2?: Prisma.StringFilter<"User"> | string
   tree_enc_key?: Prisma.StringFilter<"User"> | string
+  sign_pub_key?: Prisma.StringNullableFilter<"User"> | string | null
+  sign_priv_key_enc_1?: Prisma.StringNullableFilter<"User"> | string | null
+  sign_priv_key_enc_2?: Prisma.StringNullableFilter<"User"> | string | null
+  key_certificate?: Prisma.JsonNullableFilter<"User">
+  key_certificate_signature?: Prisma.StringNullableFilter<"User"> | string | null
+  key_fingerprint?: Prisma.StringNullableFilter<"User"> | string | null
   totpSecret?: Prisma.StringNullableFilter<"User"> | string | null
   totpEnabled?: Prisma.BoolFilter<"User"> | boolean
   oidcConnections?: Prisma.OidcConnectionListRelationFilter
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeListRelationFilter
   userTree?: Prisma.XOR<Prisma.UserTreeNullableScalarRelationFilter, Prisma.UserTreeWhereInput> | null
   files?: Prisma.FileListRelationFilter
+  folders?: Prisma.FolderListRelationFilter
   permissions?: Prisma.FilePermissionListRelationFilter
   grantedPerms?: Prisma.FilePermissionListRelationFilter
   editedVersions?: Prisma.FileVersionListRelationFilter
@@ -267,12 +312,19 @@ export type UserOrderByWithRelationInput = {
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
   tree_enc_key?: Prisma.SortOrder
+  sign_pub_key?: Prisma.SortOrderInput | Prisma.SortOrder
+  sign_priv_key_enc_1?: Prisma.SortOrderInput | Prisma.SortOrder
+  sign_priv_key_enc_2?: Prisma.SortOrderInput | Prisma.SortOrder
+  key_certificate?: Prisma.SortOrderInput | Prisma.SortOrder
+  key_certificate_signature?: Prisma.SortOrderInput | Prisma.SortOrder
+  key_fingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
   totpSecret?: Prisma.SortOrderInput | Prisma.SortOrder
   totpEnabled?: Prisma.SortOrder
   oidcConnections?: Prisma.OidcConnectionOrderByRelationAggregateInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeOrderByRelationAggregateInput
   userTree?: Prisma.UserTreeOrderByWithRelationInput
   files?: Prisma.FileOrderByRelationAggregateInput
+  folders?: Prisma.FolderOrderByRelationAggregateInput
   permissions?: Prisma.FilePermissionOrderByRelationAggregateInput
   grantedPerms?: Prisma.FilePermissionOrderByRelationAggregateInput
   editedVersions?: Prisma.FileVersionOrderByRelationAggregateInput
@@ -286,6 +338,10 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   priv_key_enc_1?: string
   priv_key_enc_2?: string
   tree_enc_key?: string
+  sign_pub_key?: string
+  sign_priv_key_enc_1?: string
+  sign_priv_key_enc_2?: string
+  key_fingerprint?: string
   AND?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   OR?: Prisma.UserWhereInput[]
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
@@ -293,16 +349,19 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   auth_hash?: Prisma.StringNullableFilter<"User"> | string | null
   salt_mp?: Prisma.StringNullableFilter<"User"> | string | null
   salt_rc?: Prisma.StringNullableFilter<"User"> | string | null
+  key_certificate?: Prisma.JsonNullableFilter<"User">
+  key_certificate_signature?: Prisma.StringNullableFilter<"User"> | string | null
   totpSecret?: Prisma.StringNullableFilter<"User"> | string | null
   totpEnabled?: Prisma.BoolFilter<"User"> | boolean
   oidcConnections?: Prisma.OidcConnectionListRelationFilter
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeListRelationFilter
   userTree?: Prisma.XOR<Prisma.UserTreeNullableScalarRelationFilter, Prisma.UserTreeWhereInput> | null
   files?: Prisma.FileListRelationFilter
+  folders?: Prisma.FolderListRelationFilter
   permissions?: Prisma.FilePermissionListRelationFilter
   grantedPerms?: Prisma.FilePermissionListRelationFilter
   editedVersions?: Prisma.FileVersionListRelationFilter
-}, "id" | "email" | "username" | "pub_key" | "priv_key_enc_1" | "priv_key_enc_2" | "tree_enc_key">
+}, "id" | "email" | "username" | "pub_key" | "priv_key_enc_1" | "priv_key_enc_2" | "tree_enc_key" | "sign_pub_key" | "sign_priv_key_enc_1" | "sign_priv_key_enc_2" | "key_fingerprint">
 
 export type UserOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -316,6 +375,12 @@ export type UserOrderByWithAggregationInput = {
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
   tree_enc_key?: Prisma.SortOrder
+  sign_pub_key?: Prisma.SortOrderInput | Prisma.SortOrder
+  sign_priv_key_enc_1?: Prisma.SortOrderInput | Prisma.SortOrder
+  sign_priv_key_enc_2?: Prisma.SortOrderInput | Prisma.SortOrder
+  key_certificate?: Prisma.SortOrderInput | Prisma.SortOrder
+  key_certificate_signature?: Prisma.SortOrderInput | Prisma.SortOrder
+  key_fingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
   totpSecret?: Prisma.SortOrderInput | Prisma.SortOrder
   totpEnabled?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -338,6 +403,12 @@ export type UserScalarWhereWithAggregatesInput = {
   priv_key_enc_1?: Prisma.StringWithAggregatesFilter<"User"> | string
   priv_key_enc_2?: Prisma.StringWithAggregatesFilter<"User"> | string
   tree_enc_key?: Prisma.StringWithAggregatesFilter<"User"> | string
+  sign_pub_key?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  sign_priv_key_enc_1?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  sign_priv_key_enc_2?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  key_certificate?: Prisma.JsonNullableWithAggregatesFilter<"User">
+  key_certificate_signature?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  key_fingerprint?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   totpSecret?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   totpEnabled?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
 }
@@ -354,12 +425,19 @@ export type UserCreateInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionCreateNestedManyWithoutEditorInput
@@ -377,12 +455,19 @@ export type UserUncheckedCreateInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionUncheckedCreateNestedManyWithoutEditorInput
@@ -400,12 +485,19 @@ export type UserUpdateInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUpdateManyWithoutEditorNestedInput
@@ -423,12 +515,19 @@ export type UserUncheckedUpdateInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUncheckedUpdateManyWithoutEditorNestedInput
@@ -446,6 +545,12 @@ export type UserCreateManyInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
 }
@@ -462,6 +567,12 @@ export type UserUpdateManyMutationInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -478,6 +589,12 @@ export type UserUncheckedUpdateManyInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
@@ -494,6 +611,12 @@ export type UserCountOrderByAggregateInput = {
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
   tree_enc_key?: Prisma.SortOrder
+  sign_pub_key?: Prisma.SortOrder
+  sign_priv_key_enc_1?: Prisma.SortOrder
+  sign_priv_key_enc_2?: Prisma.SortOrder
+  key_certificate?: Prisma.SortOrder
+  key_certificate_signature?: Prisma.SortOrder
+  key_fingerprint?: Prisma.SortOrder
   totpSecret?: Prisma.SortOrder
   totpEnabled?: Prisma.SortOrder
 }
@@ -510,6 +633,11 @@ export type UserMaxOrderByAggregateInput = {
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
   tree_enc_key?: Prisma.SortOrder
+  sign_pub_key?: Prisma.SortOrder
+  sign_priv_key_enc_1?: Prisma.SortOrder
+  sign_priv_key_enc_2?: Prisma.SortOrder
+  key_certificate_signature?: Prisma.SortOrder
+  key_fingerprint?: Prisma.SortOrder
   totpSecret?: Prisma.SortOrder
   totpEnabled?: Prisma.SortOrder
 }
@@ -526,6 +654,11 @@ export type UserMinOrderByAggregateInput = {
   priv_key_enc_1?: Prisma.SortOrder
   priv_key_enc_2?: Prisma.SortOrder
   tree_enc_key?: Prisma.SortOrder
+  sign_pub_key?: Prisma.SortOrder
+  sign_priv_key_enc_1?: Prisma.SortOrder
+  sign_priv_key_enc_2?: Prisma.SortOrder
+  key_certificate_signature?: Prisma.SortOrder
+  key_fingerprint?: Prisma.SortOrder
   totpSecret?: Prisma.SortOrder
   totpEnabled?: Prisma.SortOrder
 }
@@ -549,6 +682,20 @@ export type NullableStringFieldUpdateOperationsInput = {
 
 export type BoolFieldUpdateOperationsInput = {
   set?: boolean
+}
+
+export type UserCreateNestedOneWithoutFoldersInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFoldersInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutFoldersNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutFoldersInput
+  upsert?: Prisma.UserUpsertWithoutFoldersInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutFoldersInput, Prisma.UserUpdateWithoutFoldersInput>, Prisma.UserUncheckedUpdateWithoutFoldersInput>
 }
 
 export type UserCreateNestedOneWithoutTotpRecoveryCodesInput = {
@@ -649,6 +796,138 @@ export type UserUpdateOneRequiredWithoutEditedVersionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutEditedVersionsInput, Prisma.UserUpdateWithoutEditedVersionsInput>, Prisma.UserUncheckedUpdateWithoutEditedVersionsInput>
 }
 
+export type UserCreateWithoutFoldersInput = {
+  id?: string
+  email: string
+  username: string
+  role?: $Enums.Role
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
+  pub_key: string
+  priv_key_enc_1: string
+  priv_key_enc_2: string
+  tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
+  totpRecoveryCodes?: Prisma.TotpRecoveryCodeCreateNestedManyWithoutUserInput
+  userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
+  files?: Prisma.FileCreateNestedManyWithoutOwnerInput
+  permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
+  grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
+  editedVersions?: Prisma.FileVersionCreateNestedManyWithoutEditorInput
+}
+
+export type UserUncheckedCreateWithoutFoldersInput = {
+  id?: string
+  email: string
+  username: string
+  role?: $Enums.Role
+  auth_hash?: string | null
+  salt_mp?: string | null
+  salt_rc?: string | null
+  pub_key: string
+  priv_key_enc_1: string
+  priv_key_enc_2: string
+  tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
+  totpSecret?: string | null
+  totpEnabled?: boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
+  totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedCreateNestedManyWithoutUserInput
+  userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
+  files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
+  permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
+  grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
+  editedVersions?: Prisma.FileVersionUncheckedCreateNestedManyWithoutEditorInput
+}
+
+export type UserCreateOrConnectWithoutFoldersInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+}
+
+export type UserUpsertWithoutFoldersInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutFoldersInput, Prisma.UserUncheckedUpdateWithoutFoldersInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutFoldersInput, Prisma.UserUncheckedCreateWithoutFoldersInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutFoldersInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutFoldersInput, Prisma.UserUncheckedUpdateWithoutFoldersInput>
+}
+
+export type UserUpdateWithoutFoldersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pub_key?: Prisma.StringFieldUpdateOperationsInput | string
+  priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
+  priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
+  totpRecoveryCodes?: Prisma.TotpRecoveryCodeUpdateManyWithoutUserNestedInput
+  userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
+  files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
+  permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
+  grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
+  editedVersions?: Prisma.FileVersionUpdateManyWithoutEditorNestedInput
+}
+
+export type UserUncheckedUpdateWithoutFoldersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  username?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
+  auth_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_mp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  salt_rc?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pub_key?: Prisma.StringFieldUpdateOperationsInput | string
+  priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
+  priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
+  tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
+  totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
+  userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
+  files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
+  permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
+  grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
+  editedVersions?: Prisma.FileVersionUncheckedUpdateManyWithoutEditorNestedInput
+}
+
 export type UserCreateWithoutTotpRecoveryCodesInput = {
   id?: string
   email: string
@@ -661,11 +940,18 @@ export type UserCreateWithoutTotpRecoveryCodesInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionCreateNestedManyWithoutEditorInput
@@ -683,11 +969,18 @@ export type UserUncheckedCreateWithoutTotpRecoveryCodesInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionUncheckedCreateNestedManyWithoutEditorInput
@@ -721,11 +1014,18 @@ export type UserUpdateWithoutTotpRecoveryCodesInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUpdateManyWithoutEditorNestedInput
@@ -743,11 +1043,18 @@ export type UserUncheckedUpdateWithoutTotpRecoveryCodesInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUncheckedUpdateManyWithoutEditorNestedInput
@@ -765,11 +1072,18 @@ export type UserCreateWithoutOidcConnectionsInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionCreateNestedManyWithoutEditorInput
@@ -787,11 +1101,18 @@ export type UserUncheckedCreateWithoutOidcConnectionsInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionUncheckedCreateNestedManyWithoutEditorInput
@@ -825,11 +1146,18 @@ export type UserUpdateWithoutOidcConnectionsInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUpdateManyWithoutEditorNestedInput
@@ -847,11 +1175,18 @@ export type UserUncheckedUpdateWithoutOidcConnectionsInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUncheckedUpdateManyWithoutEditorNestedInput
@@ -869,11 +1204,18 @@ export type UserCreateWithoutUserTreeInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeCreateNestedManyWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionCreateNestedManyWithoutEditorInput
@@ -891,11 +1233,18 @@ export type UserUncheckedCreateWithoutUserTreeInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedCreateNestedManyWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionUncheckedCreateNestedManyWithoutEditorInput
@@ -929,11 +1278,18 @@ export type UserUpdateWithoutUserTreeInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUpdateManyWithoutEditorNestedInput
@@ -951,11 +1307,18 @@ export type UserUncheckedUpdateWithoutUserTreeInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUncheckedUpdateManyWithoutEditorNestedInput
@@ -973,11 +1336,18 @@ export type UserCreateWithoutFilesInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
+  folders?: Prisma.FolderCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionCreateNestedManyWithoutEditorInput
@@ -995,11 +1365,18 @@ export type UserUncheckedCreateWithoutFilesInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionUncheckedCreateNestedManyWithoutEditorInput
@@ -1033,11 +1410,18 @@ export type UserUpdateWithoutFilesInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUpdateManyWithoutEditorNestedInput
@@ -1055,11 +1439,18 @@ export type UserUncheckedUpdateWithoutFilesInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUncheckedUpdateManyWithoutEditorNestedInput
@@ -1077,12 +1468,19 @@ export type UserCreateWithoutPermissionsInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderCreateNestedManyWithoutOwnerInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionCreateNestedManyWithoutEditorInput
 }
@@ -1099,12 +1497,19 @@ export type UserUncheckedCreateWithoutPermissionsInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutOwnerInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
   editedVersions?: Prisma.FileVersionUncheckedCreateNestedManyWithoutEditorInput
 }
@@ -1126,12 +1531,19 @@ export type UserCreateWithoutGrantedPermsInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
   editedVersions?: Prisma.FileVersionCreateNestedManyWithoutEditorInput
 }
@@ -1148,12 +1560,19 @@ export type UserUncheckedCreateWithoutGrantedPermsInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
   editedVersions?: Prisma.FileVersionUncheckedCreateNestedManyWithoutEditorInput
 }
@@ -1186,12 +1605,19 @@ export type UserUpdateWithoutPermissionsInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutOwnerNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUpdateManyWithoutEditorNestedInput
 }
@@ -1208,12 +1634,19 @@ export type UserUncheckedUpdateWithoutPermissionsInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutOwnerNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
   editedVersions?: Prisma.FileVersionUncheckedUpdateManyWithoutEditorNestedInput
 }
@@ -1241,12 +1674,19 @@ export type UserUpdateWithoutGrantedPermsInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
   editedVersions?: Prisma.FileVersionUpdateManyWithoutEditorNestedInput
 }
@@ -1263,12 +1703,19 @@ export type UserUncheckedUpdateWithoutGrantedPermsInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
   editedVersions?: Prisma.FileVersionUncheckedUpdateManyWithoutEditorNestedInput
 }
@@ -1285,12 +1732,19 @@ export type UserCreateWithoutEditedVersionsInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeCreateNestedOneWithoutUserInput
   files?: Prisma.FileCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionCreateNestedManyWithoutGrantedByInput
 }
@@ -1307,12 +1761,19 @@ export type UserUncheckedCreateWithoutEditedVersionsInput = {
   priv_key_enc_1: string
   priv_key_enc_2: string
   tree_enc_key: string
+  sign_pub_key?: string | null
+  sign_priv_key_enc_1?: string | null
+  sign_priv_key_enc_2?: string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: string | null
+  key_fingerprint?: string | null
   totpSecret?: string | null
   totpEnabled?: boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedCreateNestedManyWithoutUserInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedCreateNestedManyWithoutUserInput
   userTree?: Prisma.UserTreeUncheckedCreateNestedOneWithoutUserInput
   files?: Prisma.FileUncheckedCreateNestedManyWithoutOwnerInput
+  folders?: Prisma.FolderUncheckedCreateNestedManyWithoutOwnerInput
   permissions?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutUserInput
   grantedPerms?: Prisma.FilePermissionUncheckedCreateNestedManyWithoutGrantedByInput
 }
@@ -1345,12 +1806,19 @@ export type UserUpdateWithoutEditedVersionsInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUpdateManyWithoutGrantedByNestedInput
 }
@@ -1367,12 +1835,19 @@ export type UserUncheckedUpdateWithoutEditedVersionsInput = {
   priv_key_enc_1?: Prisma.StringFieldUpdateOperationsInput | string
   priv_key_enc_2?: Prisma.StringFieldUpdateOperationsInput | string
   tree_enc_key?: Prisma.StringFieldUpdateOperationsInput | string
+  sign_pub_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_1?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sign_priv_key_enc_2?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_certificate?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  key_certificate_signature?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  key_fingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpSecret?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   totpEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
   oidcConnections?: Prisma.OidcConnectionUncheckedUpdateManyWithoutUserNestedInput
   totpRecoveryCodes?: Prisma.TotpRecoveryCodeUncheckedUpdateManyWithoutUserNestedInput
   userTree?: Prisma.UserTreeUncheckedUpdateOneWithoutUserNestedInput
   files?: Prisma.FileUncheckedUpdateManyWithoutOwnerNestedInput
+  folders?: Prisma.FolderUncheckedUpdateManyWithoutOwnerNestedInput
   permissions?: Prisma.FilePermissionUncheckedUpdateManyWithoutUserNestedInput
   grantedPerms?: Prisma.FilePermissionUncheckedUpdateManyWithoutGrantedByNestedInput
 }
@@ -1386,6 +1861,7 @@ export type UserCountOutputType = {
   oidcConnections: number
   totpRecoveryCodes: number
   files: number
+  folders: number
   permissions: number
   grantedPerms: number
   editedVersions: number
@@ -1395,6 +1871,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   oidcConnections?: boolean | UserCountOutputTypeCountOidcConnectionsArgs
   totpRecoveryCodes?: boolean | UserCountOutputTypeCountTotpRecoveryCodesArgs
   files?: boolean | UserCountOutputTypeCountFilesArgs
+  folders?: boolean | UserCountOutputTypeCountFoldersArgs
   permissions?: boolean | UserCountOutputTypeCountPermissionsArgs
   grantedPerms?: boolean | UserCountOutputTypeCountGrantedPermsArgs
   editedVersions?: boolean | UserCountOutputTypeCountEditedVersionsArgs
@@ -1434,6 +1911,13 @@ export type UserCountOutputTypeCountFilesArgs<ExtArgs extends runtime.Types.Exte
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountFoldersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FolderWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountPermissionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.FilePermissionWhereInput
 }
@@ -1465,12 +1949,19 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   priv_key_enc_1?: boolean
   priv_key_enc_2?: boolean
   tree_enc_key?: boolean
+  sign_pub_key?: boolean
+  sign_priv_key_enc_1?: boolean
+  sign_priv_key_enc_2?: boolean
+  key_certificate?: boolean
+  key_certificate_signature?: boolean
+  key_fingerprint?: boolean
   totpSecret?: boolean
   totpEnabled?: boolean
   oidcConnections?: boolean | Prisma.User$oidcConnectionsArgs<ExtArgs>
   totpRecoveryCodes?: boolean | Prisma.User$totpRecoveryCodesArgs<ExtArgs>
   userTree?: boolean | Prisma.User$userTreeArgs<ExtArgs>
   files?: boolean | Prisma.User$filesArgs<ExtArgs>
+  folders?: boolean | Prisma.User$foldersArgs<ExtArgs>
   permissions?: boolean | Prisma.User$permissionsArgs<ExtArgs>
   grantedPerms?: boolean | Prisma.User$grantedPermsArgs<ExtArgs>
   editedVersions?: boolean | Prisma.User$editedVersionsArgs<ExtArgs>
@@ -1489,6 +1980,12 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   priv_key_enc_1?: boolean
   priv_key_enc_2?: boolean
   tree_enc_key?: boolean
+  sign_pub_key?: boolean
+  sign_priv_key_enc_1?: boolean
+  sign_priv_key_enc_2?: boolean
+  key_certificate?: boolean
+  key_certificate_signature?: boolean
+  key_fingerprint?: boolean
   totpSecret?: boolean
   totpEnabled?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1505,6 +2002,12 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   priv_key_enc_1?: boolean
   priv_key_enc_2?: boolean
   tree_enc_key?: boolean
+  sign_pub_key?: boolean
+  sign_priv_key_enc_1?: boolean
+  sign_priv_key_enc_2?: boolean
+  key_certificate?: boolean
+  key_certificate_signature?: boolean
+  key_fingerprint?: boolean
   totpSecret?: boolean
   totpEnabled?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1521,16 +2024,23 @@ export type UserSelectScalar = {
   priv_key_enc_1?: boolean
   priv_key_enc_2?: boolean
   tree_enc_key?: boolean
+  sign_pub_key?: boolean
+  sign_priv_key_enc_1?: boolean
+  sign_priv_key_enc_2?: boolean
+  key_certificate?: boolean
+  key_certificate_signature?: boolean
+  key_fingerprint?: boolean
   totpSecret?: boolean
   totpEnabled?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "username" | "role" | "auth_hash" | "salt_mp" | "salt_rc" | "pub_key" | "priv_key_enc_1" | "priv_key_enc_2" | "tree_enc_key" | "totpSecret" | "totpEnabled", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "username" | "role" | "auth_hash" | "salt_mp" | "salt_rc" | "pub_key" | "priv_key_enc_1" | "priv_key_enc_2" | "tree_enc_key" | "sign_pub_key" | "sign_priv_key_enc_1" | "sign_priv_key_enc_2" | "key_certificate" | "key_certificate_signature" | "key_fingerprint" | "totpSecret" | "totpEnabled", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   oidcConnections?: boolean | Prisma.User$oidcConnectionsArgs<ExtArgs>
   totpRecoveryCodes?: boolean | Prisma.User$totpRecoveryCodesArgs<ExtArgs>
   userTree?: boolean | Prisma.User$userTreeArgs<ExtArgs>
   files?: boolean | Prisma.User$filesArgs<ExtArgs>
+  folders?: boolean | Prisma.User$foldersArgs<ExtArgs>
   permissions?: boolean | Prisma.User$permissionsArgs<ExtArgs>
   grantedPerms?: boolean | Prisma.User$grantedPermsArgs<ExtArgs>
   editedVersions?: boolean | Prisma.User$editedVersionsArgs<ExtArgs>
@@ -1546,6 +2056,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     totpRecoveryCodes: Prisma.$TotpRecoveryCodePayload<ExtArgs>[]
     userTree: Prisma.$UserTreePayload<ExtArgs> | null
     files: Prisma.$FilePayload<ExtArgs>[]
+    folders: Prisma.$FolderPayload<ExtArgs>[]
     permissions: Prisma.$FilePermissionPayload<ExtArgs>[]
     grantedPerms: Prisma.$FilePermissionPayload<ExtArgs>[]
     editedVersions: Prisma.$FileVersionPayload<ExtArgs>[]
@@ -1562,6 +2073,12 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     priv_key_enc_1: string
     priv_key_enc_2: string
     tree_enc_key: string
+    sign_pub_key: string | null
+    sign_priv_key_enc_1: string | null
+    sign_priv_key_enc_2: string | null
+    key_certificate: runtime.JsonValue | null
+    key_certificate_signature: string | null
+    key_fingerprint: string | null
     totpSecret: string | null
     totpEnabled: boolean
   }, ExtArgs["result"]["user"]>
@@ -1962,6 +2479,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   totpRecoveryCodes<T extends Prisma.User$totpRecoveryCodesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$totpRecoveryCodesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TotpRecoveryCodePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   userTree<T extends Prisma.User$userTreeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$userTreeArgs<ExtArgs>>): Prisma.Prisma__UserTreeClient<runtime.Types.Result.GetResult<Prisma.$UserTreePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   files<T extends Prisma.User$filesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$filesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FilePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  folders<T extends Prisma.User$foldersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$foldersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FolderPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   permissions<T extends Prisma.User$permissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$permissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FilePermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   grantedPerms<T extends Prisma.User$grantedPermsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$grantedPermsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FilePermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   editedVersions<T extends Prisma.User$editedVersionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$editedVersionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FileVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -2005,6 +2523,12 @@ export interface UserFieldRefs {
   readonly priv_key_enc_1: Prisma.FieldRef<"User", 'String'>
   readonly priv_key_enc_2: Prisma.FieldRef<"User", 'String'>
   readonly tree_enc_key: Prisma.FieldRef<"User", 'String'>
+  readonly sign_pub_key: Prisma.FieldRef<"User", 'String'>
+  readonly sign_priv_key_enc_1: Prisma.FieldRef<"User", 'String'>
+  readonly sign_priv_key_enc_2: Prisma.FieldRef<"User", 'String'>
+  readonly key_certificate: Prisma.FieldRef<"User", 'Json'>
+  readonly key_certificate_signature: Prisma.FieldRef<"User", 'String'>
+  readonly key_fingerprint: Prisma.FieldRef<"User", 'String'>
   readonly totpSecret: Prisma.FieldRef<"User", 'String'>
   readonly totpEnabled: Prisma.FieldRef<"User", 'Boolean'>
 }
@@ -2488,6 +3012,30 @@ export type User$filesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs
   take?: number
   skip?: number
   distinct?: Prisma.FileScalarFieldEnum | Prisma.FileScalarFieldEnum[]
+}
+
+/**
+ * User.folders
+ */
+export type User$foldersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Folder
+   */
+  select?: Prisma.FolderSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Folder
+   */
+  omit?: Prisma.FolderOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FolderInclude<ExtArgs> | null
+  where?: Prisma.FolderWhereInput
+  orderBy?: Prisma.FolderOrderByWithRelationInput | Prisma.FolderOrderByWithRelationInput[]
+  cursor?: Prisma.FolderWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FolderScalarFieldEnum | Prisma.FolderScalarFieldEnum[]
 }
 
 /**

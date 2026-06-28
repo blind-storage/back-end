@@ -122,9 +122,16 @@ export class GoogleDriveService implements CloudStorageProvider {
     return folder.data.id!;
   }
 
-  async uploadFile(fileName: string, fileBuffer: Buffer, mimeType: string, userId: string): Promise<string> {
+  async uploadFile(
+    fileName: string,
+    fileBuffer: Buffer,
+    mimeType: string,
+    userId: string,
+    parentId?: string | null,
+  ): Promise<string> {
     const drive = await this.getDrive(userId);
-    const folderId = await this.getOrCreateAppFolder(drive);
+    // parentId = dossier Drive miroir ; sinon on retombe sur le dossier app racine.
+    const folderId = parentId ?? (await this.getOrCreateAppFolder(drive));
 
     const response = await drive.files.create({
       requestBody: { name: fileName, parents: [folderId] },
@@ -137,6 +144,72 @@ export class GoogleDriveService implements CloudStorageProvider {
       audit: { action: 'GDRIVE_UPLOAD', userId, providerId: response.data.id },
     });
     return response.data.id!;
+  }
+
+  async replaceFile(
+    providerId: string,
+    fileBuffer: Buffer,
+    mimeType: string,
+    userId: string,
+  ): Promise<string> {
+    const drive = await this.getDrive(userId);
+    await drive.files.update({
+      fileId: providerId,
+      media: { mimeType, body: Readable.from(fileBuffer) },
+      fields: 'id',
+    });
+
+    this.logger.info('File replaced in Google Drive', {
+      context: GoogleDriveService.name,
+      audit: { action: 'GDRIVE_REPLACE', userId, providerId },
+    });
+    return providerId;
+  }
+
+  // ─── Miroir de l'arborescence dans Drive ───────────────────────────────────
+
+  // ID du dossier app racine ("Blind Storage") — parent des dossiers de premier niveau.
+  async getRootFolderId(userId: string): Promise<string> {
+    return this.getOrCreateAppFolder(await this.getDrive(userId));
+  }
+
+  // Crée un dossier Drive sous parentId (ou sous la racine app si null). Retourne son ID Drive.
+  async createFolder(name: string, parentId: string | null, userId: string): Promise<string> {
+    const drive = await this.getDrive(userId);
+    const parent = parentId ?? (await this.getOrCreateAppFolder(drive));
+
+    const folder = await drive.files.create({
+      requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [parent] },
+      fields: 'id',
+    });
+
+    this.logger.info('Folder created in Google Drive', {
+      context: GoogleDriveService.name,
+      audit: { action: 'GDRIVE_FOLDER_CREATE', userId, providerId: folder.data.id },
+    });
+    return folder.data.id!;
+  }
+
+  // Renomme un fichier OU un dossier Drive.
+  async renameItem(providerId: string, newName: string, userId: string): Promise<void> {
+    const drive = await this.getDrive(userId);
+    await drive.files.update({ fileId: providerId, requestBody: { name: newName } });
+  }
+
+  // Déplace un fichier OU un dossier Drive vers newParentId (ou la racine app si null).
+  async moveItem(providerId: string, newParentId: string | null, userId: string): Promise<void> {
+    const drive = await this.getDrive(userId);
+    const parent = newParentId ?? (await this.getOrCreateAppFolder(drive));
+
+    const current = await drive.files.get({ fileId: providerId, fields: 'parents' });
+    const previousParents = (current.data.parents ?? []).join(',');
+
+    await drive.files.update({
+      fileId: providerId,
+      addParents: parent,
+      removeParents: previousParents || undefined,
+      fields: 'id',
+    });
   }
 
   async downloadFile(fileId: string, userId: string): Promise<Buffer> {
