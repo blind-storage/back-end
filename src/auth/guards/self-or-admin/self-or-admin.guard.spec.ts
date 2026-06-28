@@ -14,7 +14,7 @@ describe('SelfOrAdminGuard', () => {
     guard = new SelfOrAdminGuard();
   });
 
-  it("autorise un utilisateur accédant à sa propre ressource", () => {
+  it('autorise un utilisateur accédant à sa propre ressource', () => {
     const user = { id: 'uuid-1', role: Role.USER };
     expect(guard.canActivate(makeContext(user, 'uuid-1'))).toBe(true);
   });

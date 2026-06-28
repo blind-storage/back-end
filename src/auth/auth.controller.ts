@@ -44,7 +44,10 @@ export class AuthController {
 
   private redirectOidcResult(
     res: Response,
-    result: AuthResponseDto | OidcPendingResponseDto | OidcLinkPendingResponseDto,
+    result:
+      | AuthResponseDto
+      | OidcPendingResponseDto
+      | OidcLinkPendingResponseDto,
   ): void {
     const base = process.env.FRONTEND_URL ?? 'http://localhost:8000';
     let url: string;
@@ -73,10 +76,14 @@ export class AuthController {
 
   @Post('totp/verify')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Vérifier le code TOTP après login (second facteur)' })
+  @ApiOperation({
+    summary: 'Vérifier le code TOTP après login (second facteur)',
+  })
   @ApiBody({ type: TotpVerifyDto })
   @ApiOkResponse({ type: AuthResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Code TOTP invalide ou token expiré' })
+  @ApiUnauthorizedResponse({
+    description: 'Code TOTP invalide ou token expiré',
+  })
   async totpVerify(@Body() dto: TotpVerifyDto): Promise<AuthResponseDto> {
     return this.authService.verifyTotpLogin(dto.totp_token, dto.code);
   }
@@ -171,13 +178,24 @@ export class AuthController {
 
   @Post('oidc/challenge')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Obtenir un défi RSA-OAEP à déchiffrer avec la clé privée' })
-  @ApiBody({ schema: { properties: { pending_token: { type: 'string' } }, required: ['pending_token'] } })
-  @ApiOkResponse({ description: '{ nonce_token, encrypted_challenge, priv_key_enc_1 }' })
+  @ApiOperation({
+    summary: 'Obtenir un défi RSA-OAEP à déchiffrer avec la clé privée',
+  })
+  @ApiBody({
+    schema: {
+      properties: { pending_token: { type: 'string' } },
+      required: ['pending_token'],
+    },
+  })
+  @ApiOkResponse({
+    description: '{ nonce_token, encrypted_challenge, priv_key_enc_1 }',
+  })
   @ApiUnauthorizedResponse({ description: 'Token pending invalide ou expiré' })
-  async oidcChallenge(
-    @Body('pending_token') pending_token: string,
-  ): Promise<{ nonce_token: string; encrypted_challenge: string; priv_key_enc_1: string }> {
+  async oidcChallenge(@Body('pending_token') pending_token: string): Promise<{
+    nonce_token: string;
+    encrypted_challenge: string;
+    priv_key_enc_1: string;
+  }> {
     return this.authService.createOidcChallenge(pending_token);
   }
 
@@ -185,17 +203,25 @@ export class AuthController {
 
   @Post('oidc/verify')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Vérifier la réponse au défi RSA-OAEP et obtenir un JWT complet' })
+  @ApiOperation({
+    summary: 'Vérifier la réponse au défi RSA-OAEP et obtenir un JWT complet',
+  })
   @ApiBody({
     schema: {
       properties: {
         nonce_token: { type: 'string' },
-        plaintext:   { type: 'string', description: 'base64 du nonce déchiffré avec la clé privée' },
+        plaintext: {
+          type: 'string',
+          description: 'base64 du nonce déchiffré avec la clé privée',
+        },
       },
       required: ['nonce_token', 'plaintext'],
     },
   })
-  @ApiOkResponse({ type: AuthResponseDto, description: 'JWT complet ou défi TOTP si 2FA activé' })
+  @ApiOkResponse({
+    type: AuthResponseDto,
+    description: 'JWT complet ou défi TOTP si 2FA activé',
+  })
   @ApiUnauthorizedResponse({ description: 'Défi incorrect ou token expiré' })
   async oidcVerify(
     @Body('nonce_token') nonce_token: string,
@@ -208,10 +234,14 @@ export class AuthController {
 
   @Post('oidc/setup')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Finaliser la configuration après première connexion OIDC' })
+  @ApiOperation({
+    summary: 'Finaliser la configuration après première connexion OIDC',
+  })
   @ApiBody({ type: OidcSetupDto })
   @ApiOkResponse({ type: AuthResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Token de configuration invalide ou expiré' })
+  @ApiUnauthorizedResponse({
+    description: 'Token de configuration invalide ou expiré',
+  })
   async oidcSetup(@Body() dto: OidcSetupDto): Promise<AuthResponseDto> {
     return this.authService.completeOidcSetup(dto);
   }
@@ -220,18 +250,22 @@ export class AuthController {
 
   @Post('oidc/link-confirm')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Confirmer le lien OIDC avec le mot de passe maître' })
+  @ApiOperation({
+    summary: 'Confirmer le lien OIDC avec le mot de passe maître',
+  })
   @ApiBody({
     schema: {
       properties: {
         link_token: { type: 'string' },
-        auth_hash:  { type: 'string' },
+        auth_hash: { type: 'string' },
       },
       required: ['link_token', 'auth_hash'],
     },
   })
   @ApiOkResponse({ type: AuthResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Token invalide ou mot de passe incorrect' })
+  @ApiUnauthorizedResponse({
+    description: 'Token invalide ou mot de passe incorrect',
+  })
   async confirmOidcLink(
     @Body('link_token') link_token: string,
     @Body('auth_hash') auth_hash: string,
@@ -244,9 +278,16 @@ export class AuthController {
   @Post('oidc/link-confirm-totp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Vérifier le TOTP pour finaliser la liaison OIDC' })
-  @ApiBody({ schema: { properties: { totp_token: { type: 'string' }, code: { type: 'string' } }, required: ['totp_token', 'code'] } })
+  @ApiBody({
+    schema: {
+      properties: { totp_token: { type: 'string' }, code: { type: 'string' } },
+      required: ['totp_token', 'code'],
+    },
+  })
   @ApiOkResponse({ type: AuthResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Code TOTP invalide ou token expiré' })
+  @ApiUnauthorizedResponse({
+    description: 'Code TOTP invalide ou token expiré',
+  })
   async confirmOidcLinkTotp(
     @Body('totp_token') totp_token: string,
     @Body('code') code: string,
@@ -260,10 +301,26 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Lier un provider OIDC (Google, Rezel) à un compte déjà authentifié — accepte un setup_token ou un link_token' })
-  @ApiBody({ schema: { properties: { token: { type: 'string', description: 'setup_token ou link_token reçu après le callback OAuth' } }, required: ['token'] } })
+  @ApiOperation({
+    summary:
+      'Lier un provider OIDC (Google, Rezel) à un compte déjà authentifié — accepte un setup_token ou un link_token',
+  })
+  @ApiBody({
+    schema: {
+      properties: {
+        token: {
+          type: 'string',
+          description: 'setup_token ou link_token reçu après le callback OAuth',
+        },
+      },
+      required: ['token'],
+    },
+  })
   @ApiNoContentResponse({ description: 'Provider OIDC lié avec succès' })
-  async linkOidcProvider(@Request() req: any, @Body('token') token: string): Promise<void> {
+  async linkOidcProvider(
+    @Request() req: any,
+    @Body('token') token: string,
+  ): Promise<void> {
     return this.authService.linkOidcProvider(req.user.id, token);
   }
 
@@ -271,11 +328,20 @@ export class AuthController {
 
   @Post('totp/recover')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Récupérer l'accès via un code de récupération TOTP (désactive le TOTP)" })
+  @ApiOperation({
+    summary:
+      "Récupérer l'accès via un code de récupération TOTP (désactive le TOTP)",
+  })
   @ApiBody({ type: TotpRecoverDto })
   @ApiOkResponse({ type: AuthResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Identifiants ou code de récupération invalide' })
+  @ApiUnauthorizedResponse({
+    description: 'Identifiants ou code de récupération invalide',
+  })
   async totpRecover(@Body() dto: TotpRecoverDto): Promise<AuthResponseDto> {
-    return this.authService.recoverWithCode(dto.username, dto.password, dto.recovery_code);
+    return this.authService.recoverWithCode(
+      dto.username,
+      dto.password,
+      dto.recovery_code,
+    );
   }
 }

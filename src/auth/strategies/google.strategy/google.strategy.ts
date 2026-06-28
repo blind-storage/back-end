@@ -25,7 +25,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     } as any);
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: VerifyCallback,
+  ): Promise<any> {
     const { emails, id: providerUserId } = profile;
     const email = emails[0].value;
 
@@ -40,13 +45,22 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
 
     if (!connection) {
-      const existingUser = await this.prisma.user.findUnique({ where: { email } });
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email },
+      });
 
       if (existingUser) {
-        this.logger.warn('Google login: existing account found, returning pending link', {
-          context: GoogleStrategy.name,
-          audit: { action: 'GOOGLE_AUTH_PENDING_LINK', providerUserId, email },
-        });
+        this.logger.warn(
+          'Google login: existing account found, returning pending link',
+          {
+            context: GoogleStrategy.name,
+            audit: {
+              action: 'GOOGLE_AUTH_PENDING_LINK',
+              providerUserId,
+              email,
+            },
+          },
+        );
         done(null, {
           pendingLink: true,
           userId: existingUser.id,
@@ -59,10 +73,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         return;
       }
 
-      this.logger.warn('Google login: no account found, returning pending setup', {
-        context: GoogleStrategy.name,
-        audit: { action: 'GOOGLE_AUTH_PENDING_SETUP', providerUserId, email },
-      });
+      this.logger.warn(
+        'Google login: no account found, returning pending setup',
+        {
+          context: GoogleStrategy.name,
+          audit: { action: 'GOOGLE_AUTH_PENDING_SETUP', providerUserId, email },
+        },
+      );
       done(null, {
         pendingSetup: true,
         provider: OidcProvider.GOOGLE,

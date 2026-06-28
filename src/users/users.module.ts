@@ -8,7 +8,13 @@ import { UsersService } from './users.service';
 
 @Module({
   controllers: [UsersController],
-  providers: [UsersService, PrismaService, JwtAuthGuard, RolesGuard, SelfOrAdminGuard],
+  providers: [
+    UsersService,
+    PrismaService,
+    JwtAuthGuard,
+    RolesGuard,
+    SelfOrAdminGuard,
+  ],
   exports: [UsersService],
 })
 export class UsersModule {}

@@ -51,9 +51,12 @@ describe('UsersController', () => {
       controllers: [UsersController],
       providers: [{ provide: UsersService, useValue: usersServiceMock }],
     })
-      .overrideGuard(JwtAuthGuard).useValue(guardAllow)
-      .overrideGuard(RolesGuard).useValue(guardAllow)
-      .overrideGuard(SelfOrAdminGuard).useValue(guardAllow)
+      .overrideGuard(JwtAuthGuard)
+      .useValue(guardAllow)
+      .overrideGuard(RolesGuard)
+      .useValue(guardAllow)
+      .overrideGuard(SelfOrAdminGuard)
+      .useValue(guardAllow)
       .compile();
 
     controller = module.get<UsersController>(UsersController);
@@ -116,7 +119,9 @@ describe('UsersController', () => {
       usersServiceMock.findOne.mockRejectedValue(new NotFoundException());
       usersServiceMock.countRemainingRecoveryCodes.mockResolvedValue(0);
 
-      await expect(controller.findOne('bad-id')).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne('bad-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -151,7 +156,10 @@ describe('UsersController', () => {
   describe('enableTotp()', () => {
     it('retourne user + codes de récupération', async () => {
       const codes = ['A1B2-C3D4-E5F6-7890', 'FFFF-EEEE-DDDD-CCCC'];
-      usersServiceMock.enableTotp.mockResolvedValue({ user: { ...mockUser, totpEnabled: true }, recoveryCodes: codes });
+      usersServiceMock.enableTotp.mockResolvedValue({
+        user: { ...mockUser, totpEnabled: true },
+        recoveryCodes: codes,
+      });
 
       const result = await controller.enableTotp('uuid-1', 'TOTP_SECRET', '123456');
 

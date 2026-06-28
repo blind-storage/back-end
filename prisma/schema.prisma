@@ -30,6 +30,13 @@ model User {
   key_certificate_signature String?
   key_fingerprint     String? @unique
 
+  sign_pub_key              String?
+  sign_priv_key_enc_1       String?
+  sign_priv_key_enc_2       String?
+  key_certificate           Json?
+  key_certificate_signature String?
+  key_fingerprint           String?
+
   totpSecret     String?
   totpEnabled    Boolean  @default(false)
 

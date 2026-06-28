@@ -53,10 +53,17 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
         : null;
 
       if (existingUser) {
-        this.logger.warn('Dropbox login: existing account found, returning pending link', {
-          context: DropboxStrategy.name,
-          audit: { action: 'DROPBOX_AUTH_PENDING_LINK', providerUserId, email },
-        });
+        this.logger.warn(
+          'Dropbox login: existing account found, returning pending link',
+          {
+            context: DropboxStrategy.name,
+            audit: {
+              action: 'DROPBOX_AUTH_PENDING_LINK',
+              providerUserId,
+              email,
+            },
+          },
+        );
         done(null, {
           pendingLink: true,
           userId: existingUser.id,
@@ -69,10 +76,17 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
         return;
       }
 
-      this.logger.warn('Dropbox login: no account found, returning pending setup', {
-        context: DropboxStrategy.name,
-        audit: { action: 'DROPBOX_AUTH_PENDING_SETUP', providerUserId, email },
-      });
+      this.logger.warn(
+        'Dropbox login: no account found, returning pending setup',
+        {
+          context: DropboxStrategy.name,
+          audit: {
+            action: 'DROPBOX_AUTH_PENDING_SETUP',
+            providerUserId,
+            email,
+          },
+        },
+      );
       done(null, {
         pendingSetup: true,
         provider: OidcProvider.DROPBOX,

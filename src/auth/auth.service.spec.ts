@@ -1,4 +1,8 @@
-import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { OidcProvider, OidcSetupDto, Role } from '@blind-storage/types';
@@ -40,7 +44,9 @@ const makePendingProfile = (overrides: Partial<PendingOidcProfile> = {}): Pendin
   ...overrides,
 });
 
-const makeOidcSetupDto = (overrides: Partial<OidcSetupDto> = {}): OidcSetupDto => ({
+const makeOidcSetupDto = (
+  overrides: Partial<OidcSetupDto> = {},
+): OidcSetupDto => ({
   setup_token: 'valid.pending.token',
   username: 'alice42',
   auth_hash: AUTH_HASH,
@@ -98,7 +104,7 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
     jwtServiceMock.sign.mockReturnValue('signed.jwt.token');
-    prismaMock.$transaction.mockImplementation(async (fn: any) => fn(prismaMock));
+    prismaMock.$transaction.mockImplementation((fn: any) => fn(prismaMock));
   });
 
   // ── validateUser ────────────────────────────────────────────────────────────
@@ -121,7 +127,9 @@ describe('AuthService', () => {
     });
 
     it("retourne null si l'utilisateur n'a pas de mot de passe (OIDC seul)", async () => {
-      usersServiceMock.findByUsername.mockResolvedValue(makeUser({ auth_hash: null }));
+      usersServiceMock.findByUsername.mockResolvedValue(
+        makeUser({ auth_hash: null }),
+      );
       expect(await service.validateUser('alice42', 'any')).toBeNull();
     });
 
@@ -140,7 +148,11 @@ describe('AuthService', () => {
 
       expect(result.access_token).toBe('signed.jwt.token');
       expect(jwtServiceMock.sign).toHaveBeenCalledWith(
-        expect.objectContaining({ sub: 'uuid-1', email: 'alice@example.com', username: 'alice42' }),
+        expect.objectContaining({
+          sub: 'uuid-1',
+          email: 'alice@example.com',
+          username: 'alice42',
+        }),
       );
     });
   });
@@ -169,7 +181,10 @@ describe('AuthService', () => {
       expect(result.setup_required).toBe(true);
       expect(result.email).toBe('alice@example.com');
       expect(jwtServiceMock.sign).toHaveBeenCalledWith(
-        expect.objectContaining({ pending: true, provider: OidcProvider.GOOGLE }),
+        expect.objectContaining({
+          pending: true,
+          provider: OidcProvider.GOOGLE,
+        }),
         { expiresIn: '15m' },
       );
     });
@@ -203,19 +218,32 @@ describe('AuthService', () => {
     });
 
     it('lève UnauthorizedException si le token est invalide', async () => {
-      jwtServiceMock.verify.mockImplementation(() => { throw new Error('invalid'); });
-      await expect(service.completeOidcSetup(makeOidcSetupDto())).rejects.toThrow(UnauthorizedException);
+      jwtServiceMock.verify.mockImplementation(() => {
+        throw new Error('invalid');
+      });
+      await expect(
+        service.completeOidcSetup(makeOidcSetupDto()),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it("lève UnauthorizedException si le token n'est pas pending", async () => {
-      jwtServiceMock.verify.mockReturnValue({ sub: 'uuid-1', email: 'alice@example.com' });
-      await expect(service.completeOidcSetup(makeOidcSetupDto())).rejects.toThrow(UnauthorizedException);
+      jwtServiceMock.verify.mockReturnValue({
+        sub: 'uuid-1',
+        email: 'alice@example.com',
+      });
+      await expect(
+        service.completeOidcSetup(makeOidcSetupDto()),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('lève ConflictException si le compte est déjà lié', async () => {
       jwtServiceMock.verify.mockReturnValue(pendingPayload);
-      prismaMock.oidcConnection.findUnique.mockResolvedValue({ id: 'existing' });
-      await expect(service.completeOidcSetup(makeOidcSetupDto())).rejects.toThrow(ConflictException);
+      prismaMock.oidcConnection.findUnique.mockResolvedValue({
+        id: 'existing',
+      });
+      await expect(
+        service.completeOidcSetup(makeOidcSetupDto()),
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -226,22 +254,31 @@ describe('AuthService', () => {
       usersServiceMock.findByUsername.mockResolvedValue(makeUser({ totpEnabled: true }));
       prismaMock.totpRecoveryCode.findFirst.mockResolvedValue({ id: 'code-id' });
       prismaMock.totpRecoveryCode.update.mockResolvedValue({});
-      prismaMock.user.update.mockResolvedValue(makeUser({ totpEnabled: false }));
+      prismaMock.user.update.mockResolvedValue(
+        makeUser({ totpEnabled: false }),
+      );
 
       const result = await service.recoverWithCode('alice42', AUTH_HASH, 'A1B2-C3D4-E5F6-7890');
 
       expect(result.access_token).toBe('signed.jwt.token');
       expect(prismaMock.totpRecoveryCode.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'code-id' }, data: expect.objectContaining({ usedAt: expect.any(Date) }) }),
+        expect.objectContaining({
+          where: { id: 'code-id' },
+          data: expect.objectContaining({ usedAt: expect.any(Date) }),
+        }),
       );
       expect(prismaMock.user.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { totpEnabled: false, totpSecret: null } }),
+        expect.objectContaining({
+          data: { totpEnabled: false, totpSecret: null },
+        }),
       );
     });
 
     it('lève UnauthorizedException si identifiants invalides', async () => {
       usersServiceMock.findByUsername.mockResolvedValue(null);
-      await expect(service.recoverWithCode('alice42', 'bad', 'code')).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.recoverWithCode('alice42', 'bad', 'code'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('lève BadRequestException si le TOTP n\'est pas activé', async () => {

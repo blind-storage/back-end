@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OidcProvider, OidcSetupDto, Role, TotpRecoverDto } from '@blind-storage/types';
+import {
+  OidcProvider,
+  OidcSetupDto,
+  Role,
+  TotpRecoverDto,
+} from '@blind-storage/types';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { GoogleAuthGuard } from './guards/google-auth/jwt-auth.guard';
@@ -45,10 +50,14 @@ describe('AuthController', () => {
       controllers: [AuthController],
       providers: [{ provide: AuthService, useValue: authServiceMock }],
     })
-      .overrideGuard(LocalAuthGuard).useValue(guardAllow)
-      .overrideGuard(JwtAuthGuard).useValue(guardAllow)
-      .overrideGuard(GoogleAuthGuard).useValue(guardAllow)
-      .overrideGuard(RezelAuthGuard).useValue(guardAllow)
+      .overrideGuard(LocalAuthGuard)
+      .useValue(guardAllow)
+      .overrideGuard(JwtAuthGuard)
+      .useValue(guardAllow)
+      .overrideGuard(GoogleAuthGuard)
+      .useValue(guardAllow)
+      .overrideGuard(RezelAuthGuard)
+      .useValue(guardAllow)
       .compile();
 
     controller = module.get<AuthController>(AuthController);
@@ -133,7 +142,9 @@ describe('AuthController', () => {
 
   describe('oidcSetup()', () => {
     it('délègue au service et retourne le JWT', async () => {
-      authServiceMock.completeOidcSetup.mockResolvedValue({ access_token: 'final.jwt.token' });
+      authServiceMock.completeOidcSetup.mockResolvedValue({
+        access_token: 'final.jwt.token',
+      });
       const dto: OidcSetupDto = {
         setup_token: 'pending.jwt.token',
         username: 'alice42',
@@ -156,7 +167,9 @@ describe('AuthController', () => {
 
   describe('totpRecover()', () => {
     it('appelle recoverWithCode et retourne un JWT', async () => {
-      authServiceMock.recoverWithCode.mockResolvedValue({ access_token: 'recovered.jwt' });
+      authServiceMock.recoverWithCode.mockResolvedValue({
+        access_token: 'recovered.jwt',
+      });
       const dto: TotpRecoverDto = {
         username: 'alice42',
         password: 'P@ss!',
@@ -166,7 +179,11 @@ describe('AuthController', () => {
       const result = await controller.totpRecover(dto);
 
       expect(result.access_token).toBe('recovered.jwt');
-      expect(authServiceMock.recoverWithCode).toHaveBeenCalledWith('alice42', 'P@ss!', 'A1B2-C3D4-E5F6-7890');
+      expect(authServiceMock.recoverWithCode).toHaveBeenCalledWith(
+        'alice42',
+        'P@ss!',
+        'A1B2-C3D4-E5F6-7890',
+      );
     });
   });
 });
