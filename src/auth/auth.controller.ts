@@ -35,7 +35,6 @@ import { DropboxAuthGuard } from './guards/dropbox-auth/dropbox-auth.guard';
 import { GoogleAuthGuard } from './guards/google-auth/jwt-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
-import { RezelAuthGuard } from './guards/rezel-auth/jwt-auth.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -161,22 +160,6 @@ export class AuthController {
   @UseGuards(GoogleAuthGuard)
   @ApiOperation({ summary: 'Callback Google OAuth2' })
   googleCallback(@Request() req: any, @Res() res: Response): void {
-    this.redirectOidcResult(res, this.authService.handleOidcCallback(req.user));
-  }
-
-  // ─── GET /auth/rezel ───────────────────────────────────────────────────────
-
-  @Get('rezel')
-  @UseGuards(RezelAuthGuard)
-  @ApiOperation({ summary: 'Redirection vers Rezel OIDC' })
-  rezelLogin(): void {}
-
-  // ─── GET /auth/rezel/callback ──────────────────────────────────────────────
-
-  @Get('rezel/callback')
-  @UseGuards(RezelAuthGuard)
-  @ApiOperation({ summary: 'Callback Rezel OIDC' })
-  rezelCallback(@Request() req: any, @Res() res: Response): void {
     this.redirectOidcResult(res, this.authService.handleOidcCallback(req.user));
   }
 
@@ -325,7 +308,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Lier un provider OIDC (Google, Rezel) à un compte déjà authentifié — accepte un setup_token ou un link_token',
+      'Lier un provider OIDC (Google, Dropbox) à un compte déjà authentifié — accepte un setup_token ou un link_token',
   })
   @ApiBody({
     schema: {
