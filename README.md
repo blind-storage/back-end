@@ -1,45 +1,61 @@
-# Blind Storage
+# Blind Storage — Backend
 
-API backend Zero Knowledge pour le stockage chiffré de fichiers.
+API REST Zero Knowledge pour le stockage chiffré de fichiers. Le serveur ne voit jamais les données en clair, les clés privées, ni les mots de passe.
 
-## Objectifs
+## Principe de fonctionnement
 
-- **Zero Knowledge :** Le serveur ne voit jamais les données en clair, les clés privées ni les fichiers déchiffrés.
-- **Multi-plateforme :** API RESTful pour les applications Web et Mobile.
-- **Gestion multi-terminaux :** Synchronisation sécurisée sur plusieurs appareils liés à un seul compte.
-- **Partage sécurisé :** Partage de fichiers entre utilisateurs avec droits d'accès granulaires.
-- **Intégration Cloud :** Stockage des fichiers chiffrés sur des fournisseurs tiers (Dropbox, Google Cloud, etc.).
-- **Résilience :** Solution de recouvrement en cas de perte d'un terminal.
+Toute la cryptographie s'exécute **côté client** dans le navigateur (Web Crypto API). Le backend stocke uniquement des artefacts déjà chiffrés et distribue les clés publiques entre utilisateurs. Même un attaquant ayant un accès complet à la base de données ne peut pas lire les fichiers ou usurper une identité sans le mot de passe maître du propriétaire.
+
+| Ce que le serveur stocke | Ce que le serveur ne voit jamais |
+|---|---|
+| Clés publiques RSA (distribuables) | Clés privées en clair |
+| Clés privées chiffrées par AES-GCM | Mot de passe maître |
+| `auth_hash` (dérivé PBKDF2 côté client) | Fichiers en clair |
+| Fichiers chiffrés (via cloud tiers) | FEK / TEK en clair |
 
 ## Documentation
 
-- [Architecture & Modèle Cryptographique](doc/architecture.md)
-- [Schémas des Flux Cryptographiques](doc/crypto-flows.md)
-- [Authentification](doc/auth.md)
-- [Swagger interactif](http://localhost:3000/api/docs) *(serveur lancé)*
+| Document | Contenu |
+|---|---|
+| [Architecture & modèle cryptographique](doc/architecture.md) | Vue d'ensemble du système Zero Knowledge |
+| [Flux cryptographiques](doc/crypto-flows.md) | Diagrammes séquentiels de chaque opération (inscription, login, upload, partage…) |
+| [PKI — Infrastructure à Clés Publiques](doc/pki.md) | Hiérarchie des clés, rôle du serveur comme key server, modèle de confiance |
+| [Inventaire des algorithmes](doc/crypto-algorithms.md) | Tableau de tous les algorithmes, tailles de clés, paramètres et références normatives |
+| [Authentification](doc/auth.md) | Endpoints auth, OIDC, TOTP — flux détaillés et guards |
+| [Swagger interactif](http://localhost:3000/api/docs) | Interface OpenAPI *(serveur lancé requis)* |
+| [Logging](doc/logger.md) | Configuration Winston / ECS |
 
 ---
 
-## Get Started
+## Stack technique
+
+| Couche | Technologie |
+|---|---|
+| Framework | NestJS 11 (Node.js) |
+| Base de données | PostgreSQL + Prisma 7 |
+| Auth | Passport.js (local, JWT, Google, Rezel, Dropbox) |
+| 2FA | otplib (TOTP/HOTP) |
+| Logging | Winston + ECS format |
+| Docs API | Swagger / OpenAPI |
+
+---
+
+## Démarrage rapide
 
 ### Prérequis
 
-- [Node.js](https://nodejs.org/) >= 20
-- [Docker](https://www.docker.com/) & Docker Compose
+- Node.js ≥ 20
+- Docker & Docker Compose
 
 ### Installation
 
 ```bash
-# 1. Cloner le dépôt
-git clone https://github.com/thomas-cad/blind-storage.git
-cd blind-storage
-
-# 2. Installer les dépendances
+# Depuis la racine du monorepo
+cd back-end
 npm install
 
-# 3. Configurer les variables d'environnement
+# Copier et remplir les variables d'environnement
 cp .env.example .env
-# Remplir les valeurs dans .env
 ```
 
 ### Lancer la base de données
@@ -48,20 +64,19 @@ cp .env.example .env
 docker compose up -d
 ```
 
-### Initialiser la base de données (Prisma)
+### Initialiser Prisma
 
 ```bash
-# Appliquer les migrations et générer le client
 npx prisma migrate deploy
 npx prisma generate
 ```
 
-> En développement, pour créer une nouvelle migration après modification du schéma :
+> En développement, pour créer une migration après modification du schéma :
 > ```bash
-> npx prisma migrate dev --name <nom-de-la-migration>
+> npx prisma migrate dev --name <nom>
 > ```
 
-### Lancer le backend
+### Lancer le serveur
 
 ```bash
 # Développement (hot reload)
@@ -71,7 +86,7 @@ npm run start:dev
 npm run build && npm run start:prod
 ```
 
-L'API est disponible sur `http://localhost:3000` (ou le `PORT` défini dans `.env`).
+L'API est disponible sur `http://localhost:3000`.
 
 ---
 
@@ -79,13 +94,13 @@ L'API est disponible sur `http://localhost:3000` (ou le `PORT` défini dans `.en
 
 | Variable | Description |
 |---|---|
-| `PORT` | Port d'écoute du serveur NestJS (défaut : `3000`) |
-| `DATABASE_URL` | URL de connexion Prisma |
+| `PORT` | Port du serveur NestJS (défaut : `3000`) |
+| `DATABASE_URL` | URL de connexion Prisma/PostgreSQL |
 | `POSTGRES_USER` | Utilisateur PostgreSQL |
 | `POSTGRES_PASSWORD` | Mot de passe PostgreSQL |
 | `POSTGRES_DB` | Nom de la base de données |
-| `POSTGRES_PORT` | Port exposé par le conteneur (défaut : `5432`) |
-| `JWT_SECRET` | Secret de signature des tokens JWT |
+| `POSTGRES_PORT` | Port conteneur PostgreSQL (défaut : `5432`) |
+| `JWT_SECRET` | Secret de signature des JWT (HS256) |
 | `GOOGLE_CLIENT_ID` | App ID Google OAuth2 |
 | `GOOGLE_SECRET` | App Secret Google OAuth2 |
 | `GOOGLE_CALLBACK_URL` | URL de callback Google |
@@ -100,24 +115,49 @@ L'API est disponible sur `http://localhost:3000` (ou le `PORT` défini dans `.en
 | `DROPBOX_CLIENT_SECRET` | App secret Dropbox OAuth2 |
 | `DROPBOX_CALLBACK_URL` | URL de callback Dropbox |
 
-Voir `.env.example` pour un exemple complet.
-
 ---
 
 ## Authentification
 
-Trois méthodes de connexion sont supportées, combinables sur un même compte :
+Trois méthodes combinables sur un même compte :
 
-| Méthode | Description |
-|---|---|
-| **Locale** | `username` + `auth_hash` (dérivé du mot de passe maître côté client) |
-| **Google OAuth2** | Connexion via compte Google |
-| **Rezel OIDC** | Connexion via le SSO Rezel (Télécom Paris) |
-| **Dropbox OAuth2** | Connexion via compte Dropbox |
+| Méthode | Endpoint | Description |
+|---|---|---|
+| **Locale** | `POST /auth/login` | `username` + `auth_hash` (PBKDF2 côté client) |
+| **Google OAuth2** | `GET /auth/google` | Connexion via compte Google |
+| **Rezel OIDC** | `GET /auth/rezel` | SSO Rezel (Télécom Paris) |
+| **Dropbox OAuth2** | `GET /auth/dropbox` | Connexion via compte Dropbox |
 
-Le serveur ne voit jamais le mot de passe en clair. `auth_hash` est calculé côté client par KDF et comparé par `timingSafeEqual`.
+La connexion OIDC sur un compte existant utilise un **challenge RSA** pour prouver la possession de la clé privée sans envoyer le mot de passe maître au serveur. Voir [doc/crypto-flows.md](doc/crypto-flows.md#3-connexion-oidc-avec-preuve-de-cl%C3%A9-challenge-rsa).
 
-Pour le détail des flux (création de compte, liaison de providers, TOTP) : [doc/auth.md](doc/auth.md).
+---
+
+## Tests
+
+```bash
+npm test            # Tests unitaires
+npm run test:cov    # Couverture de code
+npm run test:e2e    # Tests end-to-end
+```
+
+---
+
+## Modèle de données principal
+
+```
+User
+├── pub_key              (clé publique RSA, distribuée librement)
+├── priv_key_enc_1       (clé privée chiffrée par KEK_1 = PBKDF2(MP))
+├── priv_key_enc_2       (clé privée chiffrée par KEK_2 = PBKDF2(RC))
+├── auth_hash            (PBKDF2(MP, salt_mp) — comparé par timingSafeEqual)
+├── tree_enc_key         (TEK chiffré par RSA-OAEP)
+├── OidcConnection[]     (liaisons Google/Rezel/Dropbox)
+├── TotpRecoveryCode[]   (codes TOTP hachés SHA-256)
+├── UserTree             (arbre chiffré AES-GCM)
+└── File[]
+    └── FilePermission[] (enc_fek par destinataire, droits read/write)
+        └── FileVersion[] (signature par version)
+```
 
 ---
 
