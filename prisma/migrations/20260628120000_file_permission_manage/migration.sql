@@ -1,0 +1,1 @@
+ALTER TABLE "FilePermission" ADD COLUMN "manage" BOOLEAN NOT NULL DEFAULT false;

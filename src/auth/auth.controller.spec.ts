@@ -89,23 +89,26 @@ describe('AuthController', () => {
     });
   });
 
-  // ── GET /auth/google/callback ───────────────────────────────────────────��───
+  // ── GET /auth/google/callback ───────────────────────────────────────────────
+  // Les callbacks OIDC redirigent vers le frontend (token / setup_token / link_token
+  // en query string) au lieu de retourner du JSON.
 
   describe('googleCallback()', () => {
-    it('redirige avec un token si le compte existe', () => {
+    it('redirige vers le frontend avec un token si le compte existe', () => {
       authServiceMock.handleOidcCallback.mockReturnValue({
         access_token: 'signed.jwt.token',
       });
-      const res = { redirect: jest.fn() };
-      controller.googleCallback({ user: mockUser }, res as any);
+      const res = { redirect: jest.fn() } as any;
 
-      expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('token='),
-      );
+      controller.googleCallback({ user: mockUser }, res);
+
       expect(authServiceMock.handleOidcCallback).toHaveBeenCalledWith(mockUser);
+      expect(res.redirect).toHaveBeenCalledWith(
+        expect.stringContaining('token=signed.jwt.token'),
+      );
     });
 
-    it('redirige avec setup_token si premier accès', () => {
+    it('redirige avec un setup_token si premier accès', () => {
       authServiceMock.handleOidcCallback.mockReturnValue(mockPendingResponse);
       const pending = {
         pendingSetup: true,
@@ -115,11 +118,12 @@ describe('AuthController', () => {
         accessToken: 'token',
         refreshToken: null,
       };
-      const res = { redirect: jest.fn() };
-      controller.googleCallback({ user: pending }, res as any);
+      const res = { redirect: jest.fn() } as any;
+
+      controller.googleCallback({ user: pending }, res);
 
       expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('setup_token='),
+        expect.stringContaining('setup_token=pending.jwt.token'),
       );
     });
   });
@@ -127,19 +131,20 @@ describe('AuthController', () => {
   // ── GET /auth/rezel/callback ────────────────────────────────────────────────
 
   describe('rezelCallback()', () => {
-    it('redirige avec un token si le compte existe', () => {
+    it('redirige vers le frontend avec un token si le compte existe', () => {
       authServiceMock.handleOidcCallback.mockReturnValue({
         access_token: 'signed.jwt.token',
       });
-      const res = { redirect: jest.fn() };
-      controller.rezelCallback({ user: mockUser }, res as any);
+      const res = { redirect: jest.fn() } as any;
+
+      controller.rezelCallback({ user: mockUser }, res);
 
       expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('token='),
+        expect.stringContaining('token=signed.jwt.token'),
       );
     });
 
-    it('redirige avec setup_token si premier accès', () => {
+    it('redirige avec un setup_token si premier accès', () => {
       authServiceMock.handleOidcCallback.mockReturnValue(mockPendingResponse);
       const pending = {
         pendingSetup: true,
@@ -149,11 +154,12 @@ describe('AuthController', () => {
         accessToken: 'token',
         refreshToken: null,
       };
-      const res = { redirect: jest.fn() };
-      controller.rezelCallback({ user: pending }, res as any);
+      const res = { redirect: jest.fn() } as any;
+
+      controller.rezelCallback({ user: pending }, res);
 
       expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('setup_token='),
+        expect.stringContaining('setup_token=pending.jwt.token'),
       );
     });
   });
@@ -168,6 +174,7 @@ describe('AuthController', () => {
       const dto: OidcSetupDto = {
         setup_token: 'pending.jwt.token',
         username: 'alice42',
+        auth_hash: 'derived-auth-hash',
         pub_key: 'pub-key',
         priv_key_enc_1: 'enc1',
         priv_key_enc_2: 'enc2',

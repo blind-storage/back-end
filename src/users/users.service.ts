@@ -6,7 +6,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, createHmac, randomBytes } from 'crypto';
 import { verifySync, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib';
 
 function checkTotp(token: string, secret: string): boolean {
@@ -34,6 +34,53 @@ function generateRecoveryCode(): string {
 
 export function hashRecoveryCode(code: string): string {
   return createHash('sha256').update(code.toUpperCase()).digest('hex');
+}
+
+type KeyCertificate = {
+  version: 1;
+  subject: { userId: string; username: string; email: string };
+  keys: { encryption: string; signing: string | null };
+  issuedAt: string;
+};
+
+function stableJson(value: unknown): string {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`)
+    .join(',')}}`;
+}
+
+export function buildLightPkiMaterial(user: {
+  id: string;
+  username: string;
+  email: string;
+  pub_key: string;
+  sign_pub_key?: string | null;
+}): {
+  key_certificate: KeyCertificate;
+  key_certificate_signature: string;
+  key_fingerprint: string;
+} {
+  const key_certificate: KeyCertificate = {
+    version: 1,
+    subject: { userId: user.id, username: user.username, email: user.email },
+    keys: { encryption: user.pub_key, signing: user.sign_pub_key ?? null },
+    issuedAt: new Date().toISOString(),
+  };
+  const key_fingerprint = createHash('sha256')
+    .update(`${user.pub_key}.${user.sign_pub_key ?? ''}`)
+    .digest('base64');
+  const secret =
+    process.env.PKI_CA_SECRET ??
+    process.env.JWT_SECRET ??
+    'blind-storage-dev-pki-secret';
+  const key_certificate_signature = createHmac('sha256', secret)
+    .update(stableJson(key_certificate))
+    .digest('base64');
+  return { key_certificate, key_certificate_signature, key_fingerprint };
 }
 
 // ─── Service ────────────────────────────────��──────────────────────────��───────
@@ -64,7 +111,12 @@ export class UsersService {
     }
 
     try {
-      const user = await this.prisma.user.create({ data: dto as any });
+      const created = await this.prisma.user.create({ data: dto as any });
+      const pki = buildLightPkiMaterial(created);
+      const user = await this.prisma.user.update({
+        where: { id: created.id },
+        data: pki as any,
+      });
       this.logger.log(`User created successfully: ${user.id}`);
       return user;
     } catch (error) {
@@ -105,6 +157,17 @@ export class UsersService {
   async findByUsername(username: string): Promise<UserModel | null> {
     this.logger.log(`Fetching user by username: ${username}`);
     return this.prisma.user.findUnique({ where: { username } });
+  }
+
+  async lookup(query: string): Promise<UserModel> {
+    const q = (query ?? '').trim();
+    if (!q) throw new BadRequestException('Recherche utilisateur requise');
+
+    const user = await this.prisma.user.findFirst({
+      where: { OR: [{ email: q }, { username: q }] },
+    });
+    if (!user) throw new NotFoundException(`Utilisateur introuvable (${q})`);
+    return user;
   }
 
   // ─── Update ─────────────────────────────────────────────────────���──────────
@@ -160,7 +223,38 @@ export class UsersService {
     await this.findOne(id);
 
     try {
-      await this.prisma.user.delete({ where: { id } });
+      const ownedFiles = await this.prisma.file.findMany({
+        where: { ownerId: id },
+        select: { id: true },
+      });
+      const ownedFileIds = ownedFiles.map((file) => file.id);
+
+      await this.prisma.$transaction([
+        this.prisma.filePermission.deleteMany({
+          where: {
+            OR: [
+              ...(ownedFileIds.length
+                ? [{ fileId: { in: ownedFileIds } }]
+                : []),
+              { userId: id },
+              { grantedById: id },
+            ],
+          },
+        }),
+        this.prisma.fileVersion.deleteMany({
+          where: {
+            OR: [
+              ...(ownedFileIds.length
+                ? [{ fileId: { in: ownedFileIds } }]
+                : []),
+              { editedById: id },
+            ],
+          },
+        }),
+        this.prisma.file.deleteMany({ where: { ownerId: id } }),
+        this.prisma.userTree.deleteMany({ where: { userId: id } }),
+        this.prisma.user.delete({ where: { id } }),
+      ]);
       this.logger.log(`User deleted: ${id}`);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));

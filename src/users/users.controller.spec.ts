@@ -29,10 +29,13 @@ const usersServiceMock = {
   create: jest.fn(),
   findAll: jest.fn(),
   findOne: jest.fn(),
-  countRemainingRecoveryCodes: jest.fn().mockResolvedValue(5),
+  countRemainingRecoveryCodes: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
+  getOidcConnections: jest.fn(),
+  removeOidcConnection: jest.fn(),
   enableTotp: jest.fn(),
+  renewRecoveryCodes: jest.fn(),
   disableTotp: jest.fn(),
 };
 
@@ -105,6 +108,7 @@ describe('UsersController', () => {
   describe('findOne()', () => {
     it("retourne l'utilisateur correspondant", async () => {
       usersServiceMock.findOne.mockResolvedValue(mockUser);
+      usersServiceMock.countRemainingRecoveryCodes.mockResolvedValue(0);
 
       const result = await controller.findOne('uuid-1');
 
@@ -113,6 +117,7 @@ describe('UsersController', () => {
 
     it('propage NotFoundException du service', async () => {
       usersServiceMock.findOne.mockRejectedValue(new NotFoundException());
+      usersServiceMock.countRemainingRecoveryCodes.mockResolvedValue(0);
 
       await expect(controller.findOne('bad-id')).rejects.toThrow(
         NotFoundException,

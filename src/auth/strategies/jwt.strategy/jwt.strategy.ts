@@ -24,7 +24,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any): Promise<JwtUser> {
-    if (payload.oidcPending || payload.oidcNonce || payload.totpPending) {
+    if (
+      payload.oidcPending ||
+      payload.oidcNonce ||
+      payload.totpPending ||
+      payload.storageConnect
+    ) {
       throw new UnauthorizedException(
         'Token temporaire non autorisé sur cet endpoint',
       );
