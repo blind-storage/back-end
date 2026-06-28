@@ -105,14 +105,32 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Changer le mot de passe maître (la clé privée est re-chiffrée côté client)' })
+  @ApiOperation({
+    summary:
+      'Changer le mot de passe maître (la clé privée est re-chiffrée côté client)',
+  })
   @ApiBody({
     schema: {
       properties: {
-        auth_hash:      { type: 'string', description: 'Nouveau hash du mot de passe maître (dérivé côté client)' },
-        priv_key_enc_1: { type: 'string', description: 'Clé privée re-chiffrée avec la nouvelle KEK' },
-        sign_priv_key_enc_1: { type: 'string', description: 'Clé privée de signature re-chiffrée avec la nouvelle KEK', nullable: true },
-        salt_mp:        { type: 'string', description: 'Nouveau salt pour la dérivation du mot de passe maître' },
+        auth_hash: {
+          type: 'string',
+          description:
+            'Nouveau hash du mot de passe maître (dérivé côté client)',
+        },
+        priv_key_enc_1: {
+          type: 'string',
+          description: 'Clé privée re-chiffrée avec la nouvelle KEK',
+        },
+        sign_priv_key_enc_1: {
+          type: 'string',
+          description:
+            'Clé privée de signature re-chiffrée avec la nouvelle KEK',
+          nullable: true,
+        },
+        salt_mp: {
+          type: 'string',
+          description: 'Nouveau salt pour la dérivation du mot de passe maître',
+        },
       },
       required: ['auth_hash', 'priv_key_enc_1', 'salt_mp'],
     },
@@ -121,7 +139,13 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Token invalide ou expiré' })
   async changePassword(
     @Request() req: any,
-    @Body() dto: { auth_hash: string; priv_key_enc_1: string; salt_mp: string; sign_priv_key_enc_1?: string },
+    @Body()
+    dto: {
+      auth_hash: string;
+      priv_key_enc_1: string;
+      salt_mp: string;
+      sign_priv_key_enc_1?: string;
+    },
   ): Promise<void> {
     return this.authService.changePassword(req.user.id, dto);
   }

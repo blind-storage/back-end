@@ -70,7 +70,10 @@ export class UsersController {
   @Get('lookup')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Rechercher un utilisateur par email ou username pour récupérer sa clé publique' })
+  @ApiOperation({
+    summary:
+      'Rechercher un utilisateur par email ou username pour récupérer sa clé publique',
+  })
   @ApiOkResponse({ type: UserEntity })
   @ApiNotFoundResponse({ description: 'Utilisateur introuvable' })
   async lookup(@Query('q') q: string): Promise<{
@@ -91,7 +94,8 @@ export class UsersController {
       pub_key: user.pub_key,
       sign_pub_key: (user as any).sign_pub_key ?? null,
       key_certificate: (user as any).key_certificate ?? null,
-      key_certificate_signature: (user as any).key_certificate_signature ?? null,
+      key_certificate_signature:
+        (user as any).key_certificate_signature ?? null,
       key_fingerprint: (user as any).key_fingerprint ?? null,
     };
   }

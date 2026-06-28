@@ -19,22 +19,25 @@ const AUTH_HASH = '$2b$10$hashedpassword';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-const makeUser = (overrides: Partial<UserModel> = {}): UserModel => ({
-  id: 'uuid-1',
-  email: 'alice@example.com',
-  username: 'alice42',
-  auth_hash: AUTH_HASH,
-  salt_mp: 'salt1',
-  salt_rc: 'salt2',
-  pub_key: 'pub-key-alice',
-  priv_key_enc_1: 'enc1',
-  priv_key_enc_2: 'enc2',
-  totpSecret: null,
-  totpEnabled: false,
-  ...overrides,
-} as UserModel);
+const makeUser = (overrides: Partial<UserModel> = {}): UserModel =>
+  ({
+    id: 'uuid-1',
+    email: 'alice@example.com',
+    username: 'alice42',
+    auth_hash: AUTH_HASH,
+    salt_mp: 'salt1',
+    salt_rc: 'salt2',
+    pub_key: 'pub-key-alice',
+    priv_key_enc_1: 'enc1',
+    priv_key_enc_2: 'enc2',
+    totpSecret: null,
+    totpEnabled: false,
+    ...overrides,
+  }) as UserModel;
 
-const makePendingProfile = (overrides: Partial<PendingOidcProfile> = {}): PendingOidcProfile => ({
+const makePendingProfile = (
+  overrides: Partial<PendingOidcProfile> = {},
+): PendingOidcProfile => ({
   pendingSetup: true,
   provider: OidcProvider.GOOGLE,
   providerUserId: 'google-uid-1',
@@ -104,7 +107,9 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
     jwtServiceMock.sign.mockReturnValue('signed.jwt.token');
-    prismaMock.$transaction.mockImplementation((fn: any) => fn(prismaMock));
+    prismaMock.$transaction.mockImplementation(async (fn: any) =>
+      fn(prismaMock),
+    );
   });
 
   // ── validateUser ────────────────────────────────────────────────────────────
@@ -206,14 +211,18 @@ describe('AuthService', () => {
       jwtServiceMock.verify.mockReturnValue(pendingPayload);
       prismaMock.oidcConnection.findUnique.mockResolvedValue(null);
       prismaMock.user.create.mockResolvedValue(makeUser());
-      prismaMock.user.update.mockResolvedValue(makeUser({ key_fingerprint: 'fingerprint' } as any));
+      prismaMock.user.update.mockResolvedValue(
+        makeUser({ key_fingerprint: 'fingerprint' }),
+      );
       prismaMock.oidcConnection.create.mockResolvedValue({});
 
       const result = await service.completeOidcSetup(makeOidcSetupDto());
 
       expect(result.access_token).toBe('signed.jwt.token');
       expect(prismaMock.user.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ auth_hash: AUTH_HASH }) }),
+        expect.objectContaining({
+          data: expect.objectContaining({ auth_hash: AUTH_HASH }),
+        }),
       );
     });
 
@@ -251,14 +260,22 @@ describe('AuthService', () => {
 
   describe('recoverWithCode()', () => {
     it('valide le code, désactive le TOTP et retourne un JWT', async () => {
-      usersServiceMock.findByUsername.mockResolvedValue(makeUser({ totpEnabled: true }));
-      prismaMock.totpRecoveryCode.findFirst.mockResolvedValue({ id: 'code-id' });
+      usersServiceMock.findByUsername.mockResolvedValue(
+        makeUser({ totpEnabled: true }),
+      );
+      prismaMock.totpRecoveryCode.findFirst.mockResolvedValue({
+        id: 'code-id',
+      });
       prismaMock.totpRecoveryCode.update.mockResolvedValue({});
       prismaMock.user.update.mockResolvedValue(
         makeUser({ totpEnabled: false }),
       );
 
-      const result = await service.recoverWithCode('alice42', AUTH_HASH, 'A1B2-C3D4-E5F6-7890');
+      const result = await service.recoverWithCode(
+        'alice42',
+        AUTH_HASH,
+        'A1B2-C3D4-E5F6-7890',
+      );
 
       expect(result.access_token).toBe('signed.jwt.token');
       expect(prismaMock.totpRecoveryCode.update).toHaveBeenCalledWith(
@@ -281,15 +298,23 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('lève BadRequestException si le TOTP n\'est pas activé', async () => {
-      usersServiceMock.findByUsername.mockResolvedValue(makeUser({ totpEnabled: false }));
-      await expect(service.recoverWithCode('alice42', AUTH_HASH, 'code')).rejects.toThrow(BadRequestException);
+    it("lève BadRequestException si le TOTP n'est pas activé", async () => {
+      usersServiceMock.findByUsername.mockResolvedValue(
+        makeUser({ totpEnabled: false }),
+      );
+      await expect(
+        service.recoverWithCode('alice42', AUTH_HASH, 'code'),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('lève UnauthorizedException si le code de récupération est invalide', async () => {
-      usersServiceMock.findByUsername.mockResolvedValue(makeUser({ totpEnabled: true }));
+      usersServiceMock.findByUsername.mockResolvedValue(
+        makeUser({ totpEnabled: true }),
+      );
       prismaMock.totpRecoveryCode.findFirst.mockResolvedValue(null);
-      await expect(service.recoverWithCode('alice42', AUTH_HASH, 'BAD-CODE')).rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.recoverWithCode('alice42', AUTH_HASH, 'BAD-CODE'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });

@@ -18,6 +18,7 @@ const serviceMock = {
   updateFile: jest.fn(),
   listFileShares: jest.fn(),
   shareFile: jest.fn(),
+  updateFileShare: jest.fn(),
   revokeFileShare: jest.fn(),
   deleteFile: jest.fn(),
   getProvidersStatus: jest.fn(),
@@ -69,13 +70,21 @@ describe('CloudStorageController', () => {
       serviceMock.browse.mockResolvedValue(res);
       const result = await controller.browse(req, 'folder-1');
       expect(result).toBe(res);
-      expect(serviceMock.browse).toHaveBeenCalledWith('user-1', 'folder-1', 'google-drive');
+      expect(serviceMock.browse).toHaveBeenCalledWith(
+        'user-1',
+        'folder-1',
+        'google-drive',
+      );
     });
 
     it('passe null pour la racine quand folderId est absent', async () => {
       serviceMock.browse.mockResolvedValue({});
       await controller.browse(req, undefined);
-      expect(serviceMock.browse).toHaveBeenCalledWith('user-1', null, 'google-drive');
+      expect(serviceMock.browse).toHaveBeenCalledWith(
+        'user-1',
+        null,
+        'google-drive',
+      );
     });
   });
 
@@ -83,9 +92,13 @@ describe('CloudStorageController', () => {
 
   describe('sharedWithMe()', () => {
     it('retourne les fichiers partagés avec l’utilisateur', async () => {
-      serviceMock.listSharedWithMe.mockResolvedValue([{ id: 'f1', owner: { username: 'alice' } }]);
+      serviceMock.listSharedWithMe.mockResolvedValue([
+        { id: 'f1', owner: { username: 'alice' } },
+      ]);
       const result = await controller.sharedWithMe(req);
-      expect(result).toEqual({ files: [{ id: 'f1', owner: { username: 'alice' } }] });
+      expect(result).toEqual({
+        files: [{ id: 'f1', owner: { username: 'alice' } }],
+      });
       expect(serviceMock.listSharedWithMe).toHaveBeenCalledWith('user-1');
     });
   });
@@ -95,15 +108,28 @@ describe('CloudStorageController', () => {
   describe('createFolder()', () => {
     it('crée un dossier dans le parent fourni', async () => {
       serviceMock.createFolder.mockResolvedValue({ id: 'fol-1', name: 'Docs' });
-      const result = await controller.createFolder(req, { name: 'Docs', parentId: 'p1' });
+      const result = await controller.createFolder(req, {
+        name: 'Docs',
+        parentId: 'p1',
+      });
       expect(result).toEqual({ id: 'fol-1', name: 'Docs' });
-      expect(serviceMock.createFolder).toHaveBeenCalledWith('user-1', 'Docs', 'p1', 'google-drive');
+      expect(serviceMock.createFolder).toHaveBeenCalledWith(
+        'user-1',
+        'Docs',
+        'p1',
+        'google-drive',
+      );
     });
 
     it('crée à la racine quand parentId est absent', async () => {
       serviceMock.createFolder.mockResolvedValue({ id: 'fol-1' });
       await controller.createFolder(req, { name: 'Docs' });
-      expect(serviceMock.createFolder).toHaveBeenCalledWith('user-1', 'Docs', null, 'google-drive');
+      expect(serviceMock.createFolder).toHaveBeenCalledWith(
+        'user-1',
+        'Docs',
+        null,
+        'google-drive',
+      );
     });
   });
 
@@ -112,9 +138,15 @@ describe('CloudStorageController', () => {
   describe('updateFolder()', () => {
     it('renomme/déplace via le service', async () => {
       serviceMock.updateFolder.mockResolvedValue({ id: 'fol-1', name: 'New' });
-      const result = await controller.updateFolder('fol-1', req, { name: 'New', parentId: null });
+      const result = await controller.updateFolder('fol-1', req, {
+        name: 'New',
+        parentId: null,
+      });
       expect(result).toEqual({ id: 'fol-1', name: 'New' });
-      expect(serviceMock.updateFolder).toHaveBeenCalledWith('user-1', 'fol-1', { name: 'New', parentId: null });
+      expect(serviceMock.updateFolder).toHaveBeenCalledWith('user-1', 'fol-1', {
+        name: 'New',
+        parentId: null,
+      });
     });
   });
 
@@ -123,7 +155,9 @@ describe('CloudStorageController', () => {
   describe('deleteFolder()', () => {
     it('supprime le dossier et ne retourne rien', async () => {
       serviceMock.deleteFolder.mockResolvedValue(undefined);
-      await expect(controller.deleteFolder('fol-1', req)).resolves.toBeUndefined();
+      await expect(
+        controller.deleteFolder('fol-1', req),
+      ).resolves.toBeUndefined();
       expect(serviceMock.deleteFolder).toHaveBeenCalledWith('user-1', 'fol-1');
     });
   });
@@ -131,22 +165,59 @@ describe('CloudStorageController', () => {
   // ── POST /cloud-storage/:provider/upload ─────────────────────────────────────
 
   describe('uploadFile()', () => {
-    const file = { originalname: 'doc.pdf', buffer: Buffer.from('enc'), mimetype: 'application/octet-stream' };
+    const file = {
+      originalname: 'doc.pdf',
+      buffer: Buffer.from('enc'),
+      mimetype: 'application/octet-stream',
+    };
 
     it('uploade avec le folderId fourni et retourne le fileId', async () => {
       serviceMock.uploadFile.mockResolvedValue({ fileId: 'db-1' });
-      const result = await controller.uploadFile('google-drive', req, file, 'enc-fek', undefined, 'fol-1');
+      const result = await controller.uploadFile(
+        'google-drive',
+        req,
+        file,
+        'enc-fek',
+        undefined,
+        'fol-1',
+      );
       expect(result).toMatchObject({ fileId: 'db-1' });
       expect(serviceMock.uploadFile).toHaveBeenCalledWith(
-        'google-drive', 'doc.pdf', file.buffer, 'application/octet-stream', 'user-1', 'enc-fek', 'fol-1', undefined, null, 'preserve', [],
+        'google-drive',
+        'doc.pdf',
+        file.buffer,
+        'application/octet-stream',
+        'user-1',
+        'enc-fek',
+        'fol-1',
+        undefined,
+        null,
+        'preserve',
+        [],
       );
     });
 
     it('passe null pour la racine quand folderId est absent', async () => {
       serviceMock.uploadFile.mockResolvedValue({ fileId: 'db-2' });
-      await controller.uploadFile('google-drive', req, file, 'enc-fek', undefined);
+      await controller.uploadFile(
+        'google-drive',
+        req,
+        file,
+        'enc-fek',
+        undefined,
+      );
       expect(serviceMock.uploadFile).toHaveBeenCalledWith(
-        'google-drive', 'doc.pdf', file.buffer, 'application/octet-stream', 'user-1', 'enc-fek', null, undefined, null, 'preserve', [],
+        'google-drive',
+        'doc.pdf',
+        file.buffer,
+        'application/octet-stream',
+        'user-1',
+        'enc-fek',
+        null,
+        undefined,
+        null,
+        'preserve',
+        [],
       );
     });
   });
@@ -162,7 +233,9 @@ describe('CloudStorageController', () => {
       await controller.downloadFile('db-1', req, res);
 
       expect(serviceMock.downloadFile).toHaveBeenCalledWith('db-1', 'user-1');
-      expect(res.set).toHaveBeenCalledWith({ 'Content-Type': 'application/octet-stream' });
+      expect(res.set).toHaveBeenCalledWith({
+        'Content-Type': 'application/octet-stream',
+      });
       expect(res.send).toHaveBeenCalledWith(buffer);
     });
   });
@@ -172,9 +245,13 @@ describe('CloudStorageController', () => {
   describe('updateFile()', () => {
     it('renomme/déplace via le service', async () => {
       serviceMock.updateFile.mockResolvedValue(undefined);
-      const result = await controller.updateFile('db-1', req, { folderId: 'fol-2' });
+      const result = await controller.updateFile('db-1', req, {
+        folderId: 'fol-2',
+      });
       expect(result).toMatchObject({ message: expect.any(String) });
-      expect(serviceMock.updateFile).toHaveBeenCalledWith('user-1', 'db-1', { folderId: 'fol-2' });
+      expect(serviceMock.updateFile).toHaveBeenCalledWith('user-1', 'db-1', {
+        folderId: 'fol-2',
+      });
     });
   });
 
@@ -193,15 +270,52 @@ describe('CloudStorageController', () => {
       const result = await controller.shareFile('db-1', req, {
         recipientUserId: 'user-2',
         enc_fek: 'enc',
+        write: true,
+        manage: true,
       });
       expect(result).toEqual({ share: { userId: 'user-2', read: true } });
-      expect(serviceMock.shareFile).toHaveBeenCalledWith('user-1', 'db-1', 'user-2', 'enc', true, false);
+      expect(serviceMock.shareFile).toHaveBeenCalledWith(
+        'user-1',
+        'db-1',
+        'user-2',
+        'enc',
+        true,
+        true,
+        true,
+      );
+    });
+
+    it('modifie les droits du partage', async () => {
+      serviceMock.updateFileShare.mockResolvedValue({
+        userId: 'user-2',
+        read: true,
+        write: true,
+        manage: false,
+      });
+      const result = await controller.updateFileShare('db-1', 'user-2', req, {
+        write: true,
+      });
+      expect(result).toEqual({
+        share: { userId: 'user-2', read: true, write: true, manage: false },
+      });
+      expect(serviceMock.updateFileShare).toHaveBeenCalledWith(
+        'user-1',
+        'db-1',
+        'user-2',
+        { write: true },
+      );
     });
 
     it('révoque le partage', async () => {
       serviceMock.revokeFileShare.mockResolvedValue(undefined);
-      await expect(controller.revokeFileShare('db-1', 'user-2', req)).resolves.toBeUndefined();
-      expect(serviceMock.revokeFileShare).toHaveBeenCalledWith('user-1', 'db-1', 'user-2');
+      await expect(
+        controller.revokeFileShare('db-1', 'user-2', req),
+      ).resolves.toBeUndefined();
+      expect(serviceMock.revokeFileShare).toHaveBeenCalledWith(
+        'user-1',
+        'db-1',
+        'user-2',
+      );
     });
   });
 
@@ -219,7 +333,10 @@ describe('CloudStorageController', () => {
 
   describe('providersStatus()', () => {
     it('retourne le statut de connexion des stockages', async () => {
-      const status = { 'google-drive': { connected: true }, dropbox: { connected: false } };
+      const status = {
+        'google-drive': { connected: true },
+        dropbox: { connected: false },
+      };
       serviceMock.getProvidersStatus.mockResolvedValue(status);
       const result = await controller.providersStatus(req);
       expect(result).toBe(status);
@@ -231,10 +348,17 @@ describe('CloudStorageController', () => {
 
   describe('connect()', () => {
     it("retourne l'URL de consentement OAuth", async () => {
-      serviceMock.getConnectUrl.mockResolvedValue('https://accounts.google.com/o/oauth2/...');
+      serviceMock.getConnectUrl.mockResolvedValue(
+        'https://accounts.google.com/o/oauth2/...',
+      );
       const result = await controller.connect('google-drive', req);
-      expect(result).toEqual({ url: 'https://accounts.google.com/o/oauth2/...' });
-      expect(serviceMock.getConnectUrl).toHaveBeenCalledWith('google-drive', 'user-1');
+      expect(result).toEqual({
+        url: 'https://accounts.google.com/o/oauth2/...',
+      });
+      expect(serviceMock.getConnectUrl).toHaveBeenCalledWith(
+        'google-drive',
+        'user-1',
+      );
     });
   });
 });

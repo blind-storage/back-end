@@ -15,9 +15,21 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {
     super({
-      clientID:     process.env.GOOGLE_CLIENT_ID     ?? (() => { throw new Error('GOOGLE_CLIENT_ID is not defined'); })(),
-      clientSecret: process.env.GOOGLE_SECRET ?? (() => { throw new Error('GOOGLE_SECRET is not defined'); })(),
-      callbackURL:  process.env.GOOGLE_CALLBACK_URL  ?? (() => { throw new Error('GOOGLE_CALLBACK_URL is not defined'); })(),
+      clientID:
+        process.env.GOOGLE_CLIENT_ID ??
+        (() => {
+          throw new Error('GOOGLE_CLIENT_ID is not defined');
+        })(),
+      clientSecret:
+        process.env.GOOGLE_SECRET ??
+        (() => {
+          throw new Error('GOOGLE_SECRET is not defined');
+        })(),
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL ??
+        (() => {
+          throw new Error('GOOGLE_CALLBACK_URL is not defined');
+        })(),
       accessType: 'offline',
       prompt: 'consent',
       includeGrantedScopes: true,

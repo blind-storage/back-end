@@ -144,6 +144,7 @@ model FilePermission {
   enc_fek     String
   read        Boolean  @default(false)
   write       Boolean  @default(false)
+  manage      Boolean  @default(false)
   grantedById String
   grantedAt   DateTime @default(now())
 

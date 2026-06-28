@@ -105,7 +105,9 @@ describe('UsersService', () => {
     it('crée un utilisateur quand email et username sont libres', async () => {
       prismaMock.user.findFirst.mockResolvedValue(null);
       prismaMock.user.create.mockResolvedValue(makeUser());
-      prismaMock.user.update.mockResolvedValue(makeUser({ key_fingerprint: 'fingerprint' } as any));
+      prismaMock.user.update.mockResolvedValue(
+        makeUser({ key_fingerprint: 'fingerprint' }),
+      );
 
       const result = await service.create(createDto);
 
@@ -247,15 +249,18 @@ describe('UsersService', () => {
       });
       expect(prismaMock.fileVersion.deleteMany).toHaveBeenCalledWith({
         where: {
-          OR: [
-            { fileId: { in: ['file-1'] } },
-            { editedById: 'uuid-1' },
-          ],
+          OR: [{ fileId: { in: ['file-1'] } }, { editedById: 'uuid-1' }],
         },
       });
-      expect(prismaMock.file.deleteMany).toHaveBeenCalledWith({ where: { ownerId: 'uuid-1' } });
-      expect(prismaMock.userTree.deleteMany).toHaveBeenCalledWith({ where: { userId: 'uuid-1' } });
-      expect(prismaMock.user.delete).toHaveBeenCalledWith({ where: { id: 'uuid-1' } });
+      expect(prismaMock.file.deleteMany).toHaveBeenCalledWith({
+        where: { ownerId: 'uuid-1' },
+      });
+      expect(prismaMock.userTree.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'uuid-1' },
+      });
+      expect(prismaMock.user.delete).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+      });
     });
 
     it('lève NotFoundException si absent', async () => {
@@ -276,7 +281,11 @@ describe('UsersService', () => {
         makeUser({ totpEnabled: true, totpSecret: 'JBSWY3DPEHPK3PXP' }),
       );
 
-      const { user, recoveryCodes } = await service.enableTotp('uuid-1', 'SECRET123', '123456');
+      const { user, recoveryCodes } = await service.enableTotp(
+        'uuid-1',
+        'SECRET123',
+        '123456',
+      );
 
       expect(user.totpEnabled).toBe(true);
       expect(recoveryCodes).toHaveLength(10);
@@ -297,7 +306,9 @@ describe('UsersService', () => {
 
     it('lève NotFoundException si utilisateur absent', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
-      await expect(service.enableTotp('bad-id', 'S', '123456')).rejects.toThrow(NotFoundException);
+      await expect(service.enableTotp('bad-id', 'S', '123456')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

@@ -12,12 +12,19 @@ import { GoogleDriveService } from './providers/google-drive.service';
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 const prismaMock = {
-  file: { create: jest.fn(), findMany: jest.fn(), findUnique: jest.fn(), delete: jest.fn() },
+  file: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    delete: jest.fn(),
+  },
   filePermission: { findUnique: jest.fn() },
   oidcConnection: { findUnique: jest.fn(), update: jest.fn() },
 };
 
-const configServiceMock = { getOrThrow: jest.fn().mockReturnValue('mock-value') };
+const configServiceMock = {
+  getOrThrow: jest.fn().mockReturnValue('mock-value'),
+};
 
 const loggerMock = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
 
@@ -35,9 +42,15 @@ describe('CloudStorageModule (composition)', () => {
         DropboxService,
         { provide: PrismaService, useValue: prismaMock },
         { provide: ConfigService, useValue: configServiceMock },
-        { provide: JwtService, useValue: { sign: jest.fn(), verify: jest.fn() } },
+        {
+          provide: JwtService,
+          useValue: { sign: jest.fn(), verify: jest.fn() },
+        },
         { provide: WINSTON_MODULE_PROVIDER, useValue: loggerMock },
-        { provide: JwtAuthGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
+        {
+          provide: JwtAuthGuard,
+          useValue: { canActivate: jest.fn().mockReturnValue(true) },
+        },
       ],
     }).compile();
   });
@@ -61,7 +74,9 @@ describe('CloudStorageModule (composition)', () => {
   });
 
   it('enregistre CloudStorageController', () => {
-    expect(module.get(CloudStorageController)).toBeInstanceOf(CloudStorageController);
+    expect(module.get(CloudStorageController)).toBeInstanceOf(
+      CloudStorageController,
+    );
   });
 
   it('CloudStorageService expose les méthodes attendues', () => {

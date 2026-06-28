@@ -24,8 +24,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any): Promise<JwtUser> {
-    if (payload.oidcPending || payload.oidcNonce || payload.totpPending || payload.storageConnect) {
-      throw new UnauthorizedException('Token temporaire non autorisé sur cet endpoint');
+    if (
+      payload.oidcPending ||
+      payload.oidcNonce ||
+      payload.totpPending ||
+      payload.storageConnect
+    ) {
+      throw new UnauthorizedException(
+        'Token temporaire non autorisé sur cet endpoint',
+      );
     }
 
     const user = await this.prisma.user.findUnique({

@@ -4,7 +4,11 @@ import { google, drive_v3, Auth } from 'googleapis';
 import { Readable } from 'stream';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { CloudStorageProvider, FileMetadata, StorageConnection } from './cloud-storage-provider.interface';
+import {
+  CloudStorageProvider,
+  FileMetadata,
+  StorageConnection,
+} from './cloud-storage-provider.interface';
 import { PrismaService } from '../../prisma.service';
 import { OidcProvider } from '../../generated/prisma/enums';
 
@@ -25,17 +29,49 @@ export class GoogleDriveService implements CloudStorageProvider {
     return new google.auth.OAuth2(
       this.configService.getOrThrow('GOOGLE_CLIENT_ID'),
       this.configService.getOrThrow('GOOGLE_SECRET'),
-      this.configService.get<string>('GOOGLE_DRIVE_CALLBACK_URL')
-        ?? this.configService.getOrThrow('GOOGLE_CALLBACK_URL'),
+      this.configService.get<string>('GOOGLE_DRIVE_CALLBACK_URL') ??
+        this.configService.getOrThrow('GOOGLE_CALLBACK_URL'),
     );
+  }
+
+  private isGoogleAuthError(error: unknown): boolean {
+    const e = error as {
+      code?: number;
+      response?: {
+        status?: number;
+        data?: { error?: string; error_description?: string };
+      };
+      errors?: Array<{ reason?: string }>;
+    };
+    const status = e.code ?? e.response?.status;
+    const reason = e.errors?.[0]?.reason ?? e.response?.data?.error;
+    return (
+      status === 401 ||
+      reason === 'authError' ||
+      reason === 'invalid_grant' ||
+      reason === 'invalidCredentials'
+    );
+  }
+
+  private throwGoogleAuthError(error: unknown, userId: string): never {
+    if (this.isGoogleAuthError(error)) {
+      this.logger.warn('Google Drive credentials expired or revoked', {
+        context: GoogleDriveService.name,
+        userId,
+      });
+      throw new UnauthorizedException(
+        'Connexion Google Drive expirée ou révoquée. Reconnectez Google Drive depuis votre compte.',
+      );
+    }
+    throw error;
   }
 
   // ─── Connexion du stockage Drive (OAuth dédié, découplé du login) ──────────
 
   async getConnectAuthUrl(state: string): Promise<string> {
     return this.createOAuthClient().generateAuthUrl({
-      access_type: 'offline',     // => refresh_token
-      prompt: 'consent',          // force le refresh_token à chaque consentement
+      access_type: 'offline', // => refresh_token
+      prompt: 'consent', // force le refresh_token à chaque consentement
       include_granted_scopes: true,
       scope: [DRIVE_SCOPE],
       state,
@@ -49,10 +85,14 @@ export class GoogleDriveService implements CloudStorageProvider {
 
     // L'identité du compte Google via l'API Drive (pas besoin de scope profile).
     const drive = google.drive({ version: 'v3', auth: client });
-    const about = await drive.about.get({ fields: 'user(emailAddress,permissionId)' });
+    const about = await drive.about.get({
+      fields: 'user(emailAddress,permissionId)',
+    });
 
     if (!tokens.access_token) {
-      throw new UnauthorizedException('Google n\'a pas renvoyé de token d\'accès');
+      throw new UnauthorizedException(
+        "Google n'a pas renvoyé de token d'accès",
+      );
     }
 
     return {
@@ -69,7 +109,10 @@ export class GoogleDriveService implements CloudStorageProvider {
       where: { userId_provider: { userId, provider: OidcProvider.GOOGLE } },
     });
 
-    if (!connection?.accessToken || !connection.driveScope) {
+    if (
+      !connection?.driveScope ||
+      (!connection.accessToken && !connection.refreshToken)
+    ) {
       throw new UnauthorizedException(
         `Stockage Google Drive non connecté pour l'utilisateur "${userId}". ` +
           `Connectez-le via GET /cloud-storage/google-drive/connect`,
@@ -83,23 +126,32 @@ export class GoogleDriveService implements CloudStorageProvider {
       expiry_date: connection.tokenExpiresAt?.getTime(),
     });
 
-    if (connection.tokenExpiresAt && connection.tokenExpiresAt.getTime() < Date.now() + 5 * 60 * 1000) {
+    if (connection.refreshToken) {
       this.logger.info('Refreshing Google OAuth token', {
         context: GoogleDriveService.name,
         userId,
       });
-      const { credentials } = await client.refreshAccessToken();
-      await this.prisma.oidcConnection.update({
-        where: { id: connection.id },
-        data: {
-          accessToken: credentials.access_token ?? connection.accessToken,
-          refreshToken: credentials.refresh_token ?? connection.refreshToken,
-          tokenExpiresAt: credentials.expiry_date
-            ? new Date(credentials.expiry_date)
-            : connection.tokenExpiresAt,
-        },
-      });
-      client.setCredentials(credentials);
+      try {
+        const { credentials } = await client.refreshAccessToken();
+        const nextRefreshToken =
+          credentials.refresh_token ?? connection.refreshToken;
+        await this.prisma.oidcConnection.update({
+          where: { id: connection.id },
+          data: {
+            accessToken: credentials.access_token ?? connection.accessToken,
+            refreshToken: nextRefreshToken,
+            tokenExpiresAt: credentials.expiry_date
+              ? new Date(credentials.expiry_date)
+              : connection.tokenExpiresAt,
+          },
+        });
+        client.setCredentials({
+          ...credentials,
+          refresh_token: nextRefreshToken ?? undefined,
+        });
+      } catch (error) {
+        this.throwGoogleAuthError(error, userId);
+      }
     }
 
     return google.drive({ version: 'v3', auth: client });
@@ -117,7 +169,10 @@ export class GoogleDriveService implements CloudStorageProvider {
     }
 
     const folder = await drive.files.create({
-      requestBody: { name: 'Blind Storage', mimeType: 'application/vnd.google-apps.folder' },
+      requestBody: {
+        name: 'Blind Storage',
+        mimeType: 'application/vnd.google-apps.folder',
+      },
       fields: 'id',
     });
 
@@ -135,11 +190,18 @@ export class GoogleDriveService implements CloudStorageProvider {
     // parentId = dossier Drive miroir ; sinon on retombe sur le dossier app racine.
     const folderId = parentId ?? (await this.getOrCreateAppFolder(drive));
 
-    const response = await drive.files.create({
-      requestBody: { name: fileName, parents: [folderId] },
-      media: { mimeType, body: Readable.from(fileBuffer) },
-      fields: 'id',
-    });
+    let response: drive_v3.Schema$File extends never
+      ? never
+      : { data: drive_v3.Schema$File };
+    try {
+      response = await drive.files.create({
+        requestBody: { name: fileName, parents: [folderId] },
+        media: { mimeType, body: Readable.from(fileBuffer) },
+        fields: 'id',
+      });
+    } catch (error) {
+      this.throwGoogleAuthError(error, userId);
+    }
 
     this.logger.info('File uploaded to Google Drive', {
       context: GoogleDriveService.name,
@@ -155,11 +217,15 @@ export class GoogleDriveService implements CloudStorageProvider {
     userId: string,
   ): Promise<string> {
     const drive = await this.getDrive(userId);
-    await drive.files.update({
-      fileId: providerId,
-      media: { mimeType, body: Readable.from(fileBuffer) },
-      fields: 'id',
-    });
+    try {
+      await drive.files.update({
+        fileId: providerId,
+        media: { mimeType, body: Readable.from(fileBuffer) },
+        fields: 'id',
+      });
+    } catch (error) {
+      this.throwGoogleAuthError(error, userId);
+    }
 
     this.logger.info('File replaced in Google Drive', {
       context: GoogleDriveService.name,
@@ -176,42 +242,88 @@ export class GoogleDriveService implements CloudStorageProvider {
   }
 
   // Crée un dossier Drive sous parentId (ou sous la racine app si null). Retourne son ID Drive.
-  async createFolder(name: string, parentId: string | null, userId: string): Promise<string> {
+  async createFolder(
+    name: string,
+    parentId: string | null,
+    userId: string,
+  ): Promise<string> {
     const drive = await this.getDrive(userId);
     const parent = parentId ?? (await this.getOrCreateAppFolder(drive));
 
-    const folder = await drive.files.create({
-      requestBody: { name, mimeType: 'application/vnd.google-apps.folder', parents: [parent] },
-      fields: 'id',
-    });
+    let folder: drive_v3.Schema$File extends never
+      ? never
+      : { data: drive_v3.Schema$File };
+    try {
+      folder = await drive.files.create({
+        requestBody: {
+          name,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [parent],
+        },
+        fields: 'id',
+      });
+    } catch (error) {
+      this.throwGoogleAuthError(error, userId);
+    }
 
     this.logger.info('Folder created in Google Drive', {
       context: GoogleDriveService.name,
-      audit: { action: 'GDRIVE_FOLDER_CREATE', userId, providerId: folder.data.id },
+      audit: {
+        action: 'GDRIVE_FOLDER_CREATE',
+        userId,
+        providerId: folder.data.id,
+      },
     });
     return folder.data.id!;
   }
 
   // Renomme un fichier OU un dossier Drive.
-  async renameItem(providerId: string, newName: string, userId: string): Promise<void> {
+  async renameItem(
+    providerId: string,
+    newName: string,
+    userId: string,
+  ): Promise<void> {
     const drive = await this.getDrive(userId);
-    await drive.files.update({ fileId: providerId, requestBody: { name: newName } });
+    try {
+      await drive.files.update({
+        fileId: providerId,
+        requestBody: { name: newName },
+      });
+    } catch (error) {
+      this.throwGoogleAuthError(error, userId);
+    }
   }
 
   // Déplace un fichier OU un dossier Drive vers newParentId (ou la racine app si null).
-  async moveItem(providerId: string, newParentId: string | null, userId: string): Promise<void> {
+  async moveItem(
+    providerId: string,
+    newParentId: string | null,
+    userId: string,
+  ): Promise<void> {
     const drive = await this.getDrive(userId);
     const parent = newParentId ?? (await this.getOrCreateAppFolder(drive));
 
-    const current = await drive.files.get({ fileId: providerId, fields: 'parents' });
+    let current: { data: drive_v3.Schema$File };
+    try {
+      current = await drive.files.get({
+        fileId: providerId,
+        fields: 'parents',
+      });
+    } catch (error) {
+      this.throwGoogleAuthError(error, userId);
+    }
     const previousParents = (current.data.parents ?? []).join(',');
 
-    await drive.files.update({
-      fileId: providerId,
-      addParents: parent,
-      removeParents: previousParents || undefined,
-      fields: 'id',
-    });
+    try {
+      await drive.files.update({
+        fileId: providerId,
+        addParents: parent,
+        removeParents: previousParents || undefined,
+        fields: 'id',
+      });
+    } catch (error) {
+      this.throwGoogleAuthError(error, userId);
+    }
   }
 
   async downloadFile(fileId: string, userId: string): Promise<Buffer> {

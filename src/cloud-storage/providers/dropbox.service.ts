@@ -3,7 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { Dropbox, DropboxAuth } from 'dropbox';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { CloudStorageProvider, FileMetadata, StorageConnection } from './cloud-storage-provider.interface';
+import {
+  CloudStorageProvider,
+  FileMetadata,
+  StorageConnection,
+} from './cloud-storage-provider.interface';
 import { PrismaService } from '../../prisma.service';
 import { OidcProvider } from '../../generated/prisma/enums';
 
@@ -33,8 +37,10 @@ export class DropboxService implements CloudStorageProvider {
   }
 
   private getRedirectUri(): string {
-    return this.configService.get<string>('DROPBOX_STORAGE_CALLBACK_URL')
-      ?? this.configService.getOrThrow<string>('DROPBOX_CALLBACK_URL');
+    return (
+      this.configService.get<string>('DROPBOX_STORAGE_CALLBACK_URL') ??
+      this.configService.getOrThrow<string>('DROPBOX_CALLBACK_URL')
+    );
   }
 
   async getConnectAuthUrl(state: string): Promise<string> {
@@ -43,7 +49,7 @@ export class DropboxService implements CloudStorageProvider {
       redirectUri,
       state,
       'code',
-      'offline',          // => refresh_token
+      'offline', // => refresh_token
       DROPBOX_SCOPES,
       'none',
       false,
@@ -53,7 +59,10 @@ export class DropboxService implements CloudStorageProvider {
 
   async exchangeConnectCode(code: string): Promise<StorageConnection> {
     const redirectUri = this.getRedirectUri();
-    const res = await this.createAuth().getAccessTokenFromCode(redirectUri, code);
+    const res = await this.createAuth().getAccessTokenFromCode(
+      redirectUri,
+      code,
+    );
     const r = res.result as {
       access_token: string;
       refresh_token?: string;
@@ -66,7 +75,9 @@ export class DropboxService implements CloudStorageProvider {
       email: null,
       accessToken: r.access_token,
       refreshToken: r.refresh_token ?? null,
-      tokenExpiresAt: r.expires_in ? new Date(Date.now() + r.expires_in * 1000) : null,
+      tokenExpiresAt: r.expires_in
+        ? new Date(Date.now() + r.expires_in * 1000)
+        : null,
     };
   }
 
@@ -138,7 +149,11 @@ export class DropboxService implements CloudStorageProvider {
 
     this.logger.info('File uploaded to Dropbox', {
       context: DropboxService.name,
-      audit: { action: 'DROPBOX_UPLOAD', userId, path: response.result.path_display },
+      audit: {
+        action: 'DROPBOX_UPLOAD',
+        userId,
+        path: response.result.path_display,
+      },
     });
     return response.result.path_display!;
   }
@@ -158,12 +173,20 @@ export class DropboxService implements CloudStorageProvider {
 
     this.logger.info('File replaced in Dropbox', {
       context: DropboxService.name,
-      audit: { action: 'DROPBOX_REPLACE', userId, path: response.result.path_display },
+      audit: {
+        action: 'DROPBOX_REPLACE',
+        userId,
+        path: response.result.path_display,
+      },
     });
     return response.result.path_display ?? providerId;
   }
 
-  async createFolder(name: string, parentId: string | null, userId: string): Promise<string> {
+  async createFolder(
+    name: string,
+    parentId: string | null,
+    userId: string,
+  ): Promise<string> {
     const dbx = await this.getClient(userId);
     const parentPath = parentId ?? (await this.ensureRootFolder(dbx));
     const path = this.joinPath(parentPath, name);
@@ -171,7 +194,11 @@ export class DropboxService implements CloudStorageProvider {
     return response.result.metadata.path_display ?? path;
   }
 
-  async renameItem(providerId: string, newName: string, userId: string): Promise<string> {
+  async renameItem(
+    providerId: string,
+    newName: string,
+    userId: string,
+  ): Promise<string> {
     const dbx = await this.getClient(userId);
     const parentPath = this.dirname(providerId);
     const toPath = this.joinPath(parentPath, newName);
@@ -183,7 +210,11 @@ export class DropboxService implements CloudStorageProvider {
     return response.result.metadata.path_display ?? toPath;
   }
 
-  async moveItem(providerId: string, newParentId: string | null, userId: string): Promise<string> {
+  async moveItem(
+    providerId: string,
+    newParentId: string | null,
+    userId: string,
+  ): Promise<string> {
     const dbx = await this.getClient(userId);
     const parentPath = newParentId ?? (await this.ensureRootFolder(dbx));
     const toPath = this.joinPath(parentPath, this.basename(providerId));

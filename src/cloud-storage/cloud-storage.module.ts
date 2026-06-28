@@ -24,7 +24,12 @@ import { AuthModule } from '../auth/auth.module';
     }),
   ],
   controllers: [CloudStorageController, CloudStorageConnectController],
-  providers: [CloudStorageService, GoogleDriveService, DropboxService, PrismaService],
+  providers: [
+    CloudStorageService,
+    GoogleDriveService,
+    DropboxService,
+    PrismaService,
+  ],
   exports: [CloudStorageService],
 })
 export class CloudStorageModule {}

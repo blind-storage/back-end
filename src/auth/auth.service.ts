@@ -45,7 +45,11 @@ import type {
 } from '@blind-storage/types';
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
-import { UsersService, buildLightPkiMaterial, hashRecoveryCode } from '../users/users.service';
+import {
+  UsersService,
+  buildLightPkiMaterial,
+  hashRecoveryCode,
+} from '../users/users.service';
 
 type OidcCallbackUser = UserModel | PendingOidcProfile | PendingLinkProfile;
 
@@ -477,7 +481,7 @@ export class AuthService {
         },
       });
 
-      return pkiUser as UserModel;
+      return pkiUser;
     });
 
     this.logger.log(`OIDC first-time setup completed for user: ${user.id}`);
@@ -488,7 +492,12 @@ export class AuthService {
 
   async changePassword(
     userId: string,
-    dto: { auth_hash: string; priv_key_enc_1: string; salt_mp: string; sign_priv_key_enc_1?: string },
+    dto: {
+      auth_hash: string;
+      priv_key_enc_1: string;
+      salt_mp: string;
+      sign_priv_key_enc_1?: string;
+    },
   ): Promise<void> {
     this.logger.log(`Changing master password for user: ${userId}`);
 

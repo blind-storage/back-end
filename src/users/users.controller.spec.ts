@@ -161,11 +161,19 @@ describe('UsersController', () => {
         recoveryCodes: codes,
       });
 
-      const result = await controller.enableTotp('uuid-1', 'TOTP_SECRET', '123456');
+      const result = await controller.enableTotp(
+        'uuid-1',
+        'TOTP_SECRET',
+        '123456',
+      );
 
       expect(result.user.totpEnabled).toBe(true);
       expect(result.recovery_codes).toHaveLength(2);
-      expect(usersServiceMock.enableTotp).toHaveBeenCalledWith('uuid-1', 'TOTP_SECRET', '123456');
+      expect(usersServiceMock.enableTotp).toHaveBeenCalledWith(
+        'uuid-1',
+        'TOTP_SECRET',
+        '123456',
+      );
     });
   });
 

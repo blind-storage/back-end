@@ -47,7 +47,10 @@ function stableJson(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
   const record = value as Record<string, unknown>;
-  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`).join(',')}}`;
+  return `{${Object.keys(record)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`)
+    .join(',')}}`;
 }
 
 export function buildLightPkiMaterial(user: {
@@ -56,7 +59,11 @@ export function buildLightPkiMaterial(user: {
   email: string;
   pub_key: string;
   sign_pub_key?: string | null;
-}): { key_certificate: KeyCertificate; key_certificate_signature: string; key_fingerprint: string } {
+}): {
+  key_certificate: KeyCertificate;
+  key_certificate_signature: string;
+  key_fingerprint: string;
+} {
   const key_certificate: KeyCertificate = {
     version: 1,
     subject: { userId: user.id, username: user.username, email: user.email },
@@ -66,7 +73,10 @@ export function buildLightPkiMaterial(user: {
   const key_fingerprint = createHash('sha256')
     .update(`${user.pub_key}.${user.sign_pub_key ?? ''}`)
     .digest('base64');
-  const secret = process.env.PKI_CA_SECRET ?? process.env.JWT_SECRET ?? 'blind-storage-dev-pki-secret';
+  const secret =
+    process.env.PKI_CA_SECRET ??
+    process.env.JWT_SECRET ??
+    'blind-storage-dev-pki-secret';
   const key_certificate_signature = createHmac('sha256', secret)
     .update(stableJson(key_certificate))
     .digest('base64');
@@ -223,7 +233,9 @@ export class UsersService {
         this.prisma.filePermission.deleteMany({
           where: {
             OR: [
-              ...(ownedFileIds.length ? [{ fileId: { in: ownedFileIds } }] : []),
+              ...(ownedFileIds.length
+                ? [{ fileId: { in: ownedFileIds } }]
+                : []),
               { userId: id },
               { grantedById: id },
             ],
@@ -232,7 +244,9 @@ export class UsersService {
         this.prisma.fileVersion.deleteMany({
           where: {
             OR: [
-              ...(ownedFileIds.length ? [{ fileId: { in: ownedFileIds } }] : []),
+              ...(ownedFileIds.length
+                ? [{ fileId: { in: ownedFileIds } }]
+                : []),
               { editedById: id },
             ],
           },

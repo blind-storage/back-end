@@ -10,7 +10,10 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { CloudStorageProvider, FileMetadata } from './providers/cloud-storage-provider.interface';
+import {
+  CloudStorageProvider,
+  FileMetadata,
+} from './providers/cloud-storage-provider.interface';
 import { GoogleDriveService } from './providers/google-drive.service';
 import { DropboxService } from './providers/dropbox.service';
 import { PrismaService } from '../prisma.service';
@@ -54,14 +57,24 @@ export interface BrowseFileItem extends FileListItem {
   folderId: string | null;
   enc_fek: string | null;
   signature: string | null;
-  signedBy: { id: string; username: string; sign_pub_key: string | null } | null;
+  signedBy: {
+    id: string;
+    username: string;
+    sign_pub_key: string | null;
+  } | null;
   sharedCount: number;
 }
 
 export interface SharedFileItem extends BrowseFileItem {
-  owner: { id: string; username: string; email: string; sign_pub_key: string | null };
+  owner: {
+    id: string;
+    username: string;
+    email: string;
+    sign_pub_key: string | null;
+  };
   read: boolean;
   write: boolean;
+  manage: boolean;
   sharedAt: Date;
 }
 
@@ -72,6 +85,7 @@ export interface FileShareItem {
   pub_key?: string;
   read: boolean;
   write: boolean;
+  manage: boolean;
   grantedAt: Date;
 }
 
@@ -111,16 +125,25 @@ export class CloudStorageService {
   }
 
   private toOidcProvider(provider: CloudProvider): OidcProvider {
-    return provider === 'google-drive' ? OidcProvider.GOOGLE : OidcProvider.DROPBOX;
+    return provider === 'google-drive'
+      ? OidcProvider.GOOGLE
+      : OidcProvider.DROPBOX;
   }
 
   // ─── Connexion d'un stockage (OAuth dédié, découplé du login) ──────────────
 
   // Renvoie l'URL de consentement OAuth. Le `state` est un JWT court signé portant
   // l'identité de l'utilisateur authentifié (récupérée au callback, hors header).
-  async getConnectUrl(provider: CloudProvider, userId: string): Promise<string> {
+  async getConnectUrl(
+    provider: CloudProvider,
+    userId: string,
+  ): Promise<string> {
     const state = this.jwtService.sign(
-      { storageConnect: true, sub: userId, provider } satisfies StorageConnectState,
+      {
+        storageConnect: true,
+        sub: userId,
+        provider,
+      } satisfies StorageConnectState,
       { expiresIn: '10m' },
     );
     return this.getProvider(provider).getConnectAuthUrl(state);
@@ -128,7 +151,11 @@ export class CloudStorageService {
 
   // Traite le retour OAuth : valide le state, échange le code, et enregistre/MAJ
   // la connexion de stockage (driveScope = stockage activé).
-  async handleConnectCallback(provider: CloudProvider, code: string, state: string): Promise<string> {
+  async handleConnectCallback(
+    provider: CloudProvider,
+    code: string,
+    state: string,
+  ): Promise<string> {
     let payload: StorageConnectState;
     try {
       payload = this.jwtService.verify<StorageConnectState>(state);
@@ -168,7 +195,9 @@ export class CloudStorageService {
     } catch (e: any) {
       // P2002 : (provider, providerUserId) déjà rattaché à un autre utilisateur.
       if (e?.code === 'P2002') {
-        throw new ConflictException('Ce compte de stockage est déjà lié à un autre utilisateur');
+        throw new ConflictException(
+          'Ce compte de stockage est déjà lié à un autre utilisateur',
+        );
       }
       throw e;
     }
@@ -182,7 +211,9 @@ export class CloudStorageService {
   }
 
   // Indique au front quels stockages sont connectés (pour afficher fichiers vs « connecter »).
-  async getProvidersStatus(userId: string): Promise<Record<CloudProvider, { connected: boolean }>> {
+  async getProvidersStatus(
+    userId: string,
+  ): Promise<Record<CloudProvider, { connected: boolean }>> {
     const conns = await this.prisma.oidcConnection.findMany({
       where: { userId, driveScope: true },
       select: { provider: true },
@@ -190,7 +221,7 @@ export class CloudStorageService {
     const connected = new Set(conns.map((c) => c.provider));
     return {
       'google-drive': { connected: connected.has(OidcProvider.GOOGLE) },
-      'dropbox': { connected: connected.has(OidcProvider.DROPBOX) },
+      dropbox: { connected: connected.has(OidcProvider.DROPBOX) },
     };
   }
 
@@ -208,38 +239,77 @@ export class CloudStorageService {
     replacementShares: ReplacementShareKey[] = [],
   ): Promise<{ fileId: string }> {
     const trimmedName = (fileName ?? '').trim();
-    if (!trimmedName) throw new BadRequestException('Le nom du fichier est requis');
+    if (!trimmedName)
+      throw new BadRequestException('Le nom du fichier est requis');
     const storageProvider = this.getProvider(provider);
-    const folder = await this.getOwnedFolder(userId, folderId);
-    if (folder && folder.provider !== provider) {
-      throw new BadRequestException('Le dossier de destination appartient à un autre provider');
-    }
-    const parentProviderId = folder?.providerId ?? null;
-
-    const existingFiles = (await this.prisma.file.findMany({
-      where: { ownerId: userId, folderId, cloud_data: { path: ['provider'], equals: provider } },
-    })) ?? [];
-    const sameNameFile = existingFiles.find((file) => {
-      const data = file.cloud_data as unknown as CloudData;
-      return data.name.localeCompare(trimmedName, undefined, { sensitivity: 'accent' }) === 0;
-    });
-
-    if (sameNameFile && sameNameFile.id !== replaceFileId) {
-      throw new ConflictException('Un fichier avec ce nom existe déjà dans ce dossier');
-    }
 
     if (replaceFileId) {
-      const target = await this.getFileWithPermissionCheck(replaceFileId, userId, 'write');
+      const target = await this.getFileWithPermissionCheck(
+        replaceFileId,
+        userId,
+        'write',
+      );
       const previousData = target.cloud_data as unknown as CloudData;
-      if (target.ownerId !== userId) throw new ForbiddenException('Seul le propriétaire peut remplacer ce fichier');
       if (target.folderId !== folderId || previousData.provider !== provider) {
-        throw new BadRequestException('Le fichier à remplacer doit être dans le même dossier et le même provider');
+        throw new BadRequestException(
+          'Le fichier à remplacer doit être dans le même dossier et le même provider',
+        );
       }
-      if (previousData.name.localeCompare(trimmedName, undefined, { sensitivity: 'accent' }) !== 0) {
-        throw new BadRequestException('Le remplacement doit conserver le même nom de fichier');
+      if (replaceMode === 'rotate' && target.ownerId !== userId) {
+        throw new ForbiddenException(
+          'Seul le propriétaire peut remplacer avec rotation de clé',
+        );
       }
 
-      const providerId = await storageProvider.replaceFile(previousData.providerId, fileBuffer, mimeType, userId);
+      const nameChanged =
+        previousData.name.localeCompare(trimmedName, undefined, {
+          sensitivity: 'accent',
+        }) !== 0;
+      const siblingSameNameFiles = (
+        await this.prisma.file.findMany({
+          where: {
+            ownerId: target.ownerId,
+            folderId: target.folderId,
+            id: { not: target.id },
+            cloud_data: { path: ['provider'], equals: provider },
+          },
+        })
+      ).filter((file) => {
+        if (file.id === target.id) return false;
+        const data = file.cloud_data as unknown as CloudData;
+        return (
+          data.name.localeCompare(trimmedName, undefined, {
+            sensitivity: 'accent',
+          }) === 0
+        );
+      });
+      if (nameChanged && siblingSameNameFiles.length > 0) {
+        throw new ConflictException(
+          'Un fichier avec ce nom existe déjà dans ce dossier',
+        );
+      }
+
+      let providerId = await storageProvider.replaceFile(
+        previousData.providerId,
+        fileBuffer,
+        mimeType,
+        target.ownerId,
+      );
+      if (nameChanged) {
+        if (provider === 'google-drive') {
+          await this.googleDriveService.renameItem(
+            providerId,
+            trimmedName,
+            target.ownerId,
+          );
+        } else {
+          providerId = await this.dropboxService.renameItem(
+            providerId,
+            trimmedName,
+            target.ownerId,
+          );
+        }
+      }
       const nextCloudData: CloudData = {
         ...previousData,
         providerId,
@@ -249,43 +319,110 @@ export class CloudStorageService {
         signedById: signature?.trim() ? userId : undefined,
       };
 
-      const selectedShareUserIds = replacementShares.map((share) => share.userId);
-      const permissionUpdates = replaceMode === 'rotate'
-        ? [
-            this.prisma.filePermission.deleteMany({
-              where: {
-                fileId: target.id,
-                userId: { not: userId, notIn: selectedShareUserIds },
-              },
-            }),
-            ...replacementShares.map((share) => this.prisma.filePermission.update({
-              where: { fileId_userId: { fileId: target.id, userId: share.userId } },
-              data: { enc_fek: share.enc_fek },
-            })),
-          ]
-        : [];
+      const selectedShareUserIds = replacementShares.map(
+        (share) => share.userId,
+      );
+      const permissionUpdates =
+        replaceMode === 'rotate'
+          ? [
+              this.prisma.filePermission.deleteMany({
+                where: {
+                  fileId: target.id,
+                  userId: { notIn: [target.ownerId, ...selectedShareUserIds] },
+                },
+              }),
+              ...replacementShares.map((share) =>
+                this.prisma.filePermission.update({
+                  where: {
+                    fileId_userId: { fileId: target.id, userId: share.userId },
+                  },
+                  data: { enc_fek: share.enc_fek },
+                }),
+              ),
+            ]
+          : [];
+      const duplicateFiles = nameChanged ? [] : siblingSameNameFiles;
 
       await this.prisma.$transaction([
         this.prisma.file.update({
           where: { id: target.id },
           data: { cloud_data: nextCloudData as any },
         }),
-        this.prisma.filePermission.update({
+        this.prisma.filePermission.upsert({
           where: { fileId_userId: { fileId: target.id, userId } },
-          data: { enc_fek: encFek, read: true, write: true, grantedById: userId },
+          update: { enc_fek: encFek, read: true, grantedById: userId },
+          create: {
+            fileId: target.id,
+            userId,
+            enc_fek: encFek,
+            read: true,
+            write: target.ownerId === userId,
+            manage: target.ownerId === userId,
+            grantedById: userId,
+          },
         }),
         ...permissionUpdates,
       ]);
+      for (const duplicate of duplicateFiles) {
+        await this.removeFileEverywhere(
+          duplicate.id,
+          duplicate.cloud_data as unknown as CloudData,
+          target.ownerId,
+        );
+      }
 
       this.logger.info('File replaced', {
         context: CloudStorageService.name,
-        audit: { action: 'FILE_REPLACE', userId, fileId: target.id, provider, providerId },
+        audit: {
+          action: 'FILE_REPLACE',
+          userId,
+          fileId: target.id,
+          provider,
+          providerId,
+        },
       });
 
       return { fileId: target.id };
     }
 
-    const providerId = await storageProvider.uploadFile(trimmedName, fileBuffer, mimeType, userId, parentProviderId);
+    const folder = await this.getOwnedFolder(userId, folderId);
+    if (folder && folder.provider !== provider) {
+      throw new BadRequestException(
+        'Le dossier de destination appartient à un autre provider',
+      );
+    }
+    const parentProviderId = folder?.providerId ?? null;
+
+    const existingFiles =
+      (await this.prisma.file.findMany({
+        where: {
+          ownerId: userId,
+          folderId,
+          cloud_data: { path: ['provider'], equals: provider },
+        },
+      })) ?? [];
+    const sameNameFile = existingFiles.find((file) => {
+      const data = file.cloud_data as unknown as CloudData;
+      return (
+        data.name.localeCompare(trimmedName, undefined, {
+          sensitivity: 'accent',
+        }) === 0
+      );
+    });
+
+    if (sameNameFile) {
+      throw new ConflictException(
+        'Un fichier avec ce nom existe déjà dans ce dossier',
+      );
+    }
+
+    const providerId = await storageProvider.uploadFile(
+      trimmedName,
+      fileBuffer,
+      mimeType,
+      userId,
+      parentProviderId,
+    );
 
     const cloudData: CloudData = {
       provider,
@@ -307,6 +444,7 @@ export class CloudStorageService {
             enc_fek: encFek,
             read: true,
             write: true,
+            manage: true,
             grantedById: userId,
           },
         },
@@ -315,7 +453,13 @@ export class CloudStorageService {
 
     this.logger.info('File record created in DB', {
       context: CloudStorageService.name,
-      audit: { action: 'FILE_UPLOAD', userId, fileId: file.id, provider, providerId },
+      audit: {
+        action: 'FILE_UPLOAD',
+        userId,
+        fileId: file.id,
+        provider,
+        providerId,
+      },
     });
 
     return { fileId: file.id };
@@ -348,12 +492,27 @@ export class CloudStorageService {
       audit: { action: 'FILE_DOWNLOAD', userId, fileId },
     });
 
-    return this.getProvider(data.provider).downloadFile(data.providerId, file.ownerId);
+    return this.getProvider(data.provider).downloadFile(
+      data.providerId,
+      file.ownerId,
+    );
   }
 
   async deleteFile(fileId: string, userId: string): Promise<void> {
-    const file = await this.getFileWithPermissionCheck(fileId, userId, 'write');
-    await this.removeFileEverywhere(file.id, file.cloud_data as unknown as CloudData, userId);
+    const file = await this.getFileWithPermissionCheck(
+      fileId,
+      userId,
+      'manage',
+    );
+    if (file.ownerId !== userId)
+      throw new ForbiddenException(
+        'Seul le propriétaire peut supprimer ce fichier',
+      );
+    await this.removeFileEverywhere(
+      file.id,
+      file.cloud_data as unknown as CloudData,
+      userId,
+    );
 
     this.logger.info('File deleted', {
       context: CloudStorageService.name,
@@ -363,16 +522,23 @@ export class CloudStorageService {
 
   // Supprime un fichier chez le provider PUIS en base. Les FK FilePermission/FileVersion
   // sont en ON DELETE RESTRICT : on retire d'abord les lignes filles dans une transaction.
-  private async removeFileEverywhere(fileId: string, data: CloudData, userId: string): Promise<void> {
+  private async removeFileEverywhere(
+    fileId: string,
+    data: CloudData,
+    userId: string,
+  ): Promise<void> {
     try {
       await this.getProvider(data.provider).deleteFile(data.providerId, userId);
     } catch (e) {
       // Le fichier a pu être supprimé manuellement chez le provider : on nettoie quand même la base.
-      this.logger.warn('Provider file delete failed, removing DB record anyway', {
-        context: CloudStorageService.name,
-        fileId,
-        error: e instanceof Error ? e.message : String(e),
-      });
+      this.logger.warn(
+        'Provider file delete failed, removing DB record anyway',
+        {
+          context: CloudStorageService.name,
+          fileId,
+          error: e instanceof Error ? e.message : String(e),
+        },
+      );
     }
     await this.prisma.$transaction([
       this.prisma.filePermission.deleteMany({ where: { fileId } }),
@@ -386,22 +552,60 @@ export class CloudStorageService {
   // Vérifie qu'un dossier appartient bien à l'utilisateur et le retourne (null = racine).
   private async getOwnedFolder(userId: string, folderId: string | null) {
     if (!folderId) return;
-    const folder = await this.prisma.folder.findUnique({ where: { id: folderId } });
-    if (!folder) throw new NotFoundException(`Dossier introuvable (id: ${folderId})`);
-    if (folder.ownerId !== userId) throw new ForbiddenException('Accès refusé à ce dossier');
-    return { ...folder, provider: (folder.provider ?? 'google-drive') as CloudProvider };
+    const folder = await this.prisma.folder.findUnique({
+      where: { id: folderId },
+    });
+    if (!folder)
+      throw new NotFoundException(`Dossier introuvable (id: ${folderId})`);
+    if (folder.ownerId !== userId)
+      throw new ForbiddenException('Accès refusé à ce dossier');
+    return {
+      ...folder,
+      provider: (folder.provider ?? 'google-drive') as CloudProvider,
+    };
   }
 
   // Vérifie qu'un dossier appartient bien à l'utilisateur (null = racine, toujours OK).
-  private async assertFolderOwnership(userId: string, folderId: string | null): Promise<void> {
+  private async assertFolderOwnership(
+    userId: string,
+    folderId: string | null,
+  ): Promise<void> {
     await this.getOwnedFolder(userId, folderId);
   }
 
+  private async getSigners(
+    files: Array<{ cloud_data: unknown }>,
+  ): Promise<
+    Map<string, { id: string; username: string; sign_pub_key: string | null }>
+  > {
+    const signerIds = Array.from(
+      new Set(
+        files.flatMap((file) => {
+          const data = file.cloud_data as CloudData;
+          return data.signedById ? [data.signedById] : [];
+        }),
+      ),
+    );
+    if (!signerIds.length) return new Map();
+
+    const signers = await this.prisma.user.findMany({
+      where: { id: { in: signerIds } },
+      select: { id: true, username: true, sign_pub_key: true },
+    });
+    return new Map(signers.map((signer) => [signer.id, signer]));
+  }
+
   // Contenu d'un dossier : sous-dossiers + fichiers (avec enc_fek) + fil d'Ariane.
-  async browse(userId: string, folderId: string | null, provider: CloudProvider = 'google-drive'): Promise<BrowseResult> {
+  async browse(
+    userId: string,
+    folderId: string | null,
+    provider: CloudProvider = 'google-drive',
+  ): Promise<BrowseResult> {
     const currentFolder = await this.getOwnedFolder(userId, folderId);
     if (currentFolder && currentFolder.provider !== provider) {
-      throw new BadRequestException('Ce dossier appartient à un autre provider');
+      throw new BadRequestException(
+        'Ce dossier appartient à un autre provider',
+      );
     }
 
     const [folders, files] = await Promise.all([
@@ -410,26 +614,40 @@ export class CloudStorageService {
         orderBy: { name: 'asc' },
       }),
       this.prisma.file.findMany({
-        where: { ownerId: userId, folderId, cloud_data: { path: ['provider'], equals: provider } },
+        where: {
+          ownerId: userId,
+          folderId,
+          cloud_data: { path: ['provider'], equals: provider },
+        },
         orderBy: { createdAt: 'desc' },
         include: {
           permissions: { where: { userId }, select: { enc_fek: true } },
           owner: { select: { id: true, username: true, sign_pub_key: true } },
-          _count: { select: { permissions: { where: { userId: { not: userId } } } } },
+          _count: {
+            select: { permissions: { where: { userId: { not: userId } } } },
+          },
         },
       }),
     ]);
+    const signers = await this.getSigners(files);
 
-    let current: { id: string; name: string; parentId: string | null } | null = null;
+    let current: { id: string; name: string; parentId: string | null } | null =
+      null;
     const breadcrumb: { id: string; name: string }[] = [];
     if (folderId) {
       // Remonte la chaîne des parents pour construire le fil d'Ariane.
-      let cursor = await this.prisma.folder.findUnique({ where: { id: folderId } });
-      current = cursor ? { id: cursor.id, name: cursor.name, parentId: cursor.parentId } : null;
+      let cursor = await this.prisma.folder.findUnique({
+        where: { id: folderId },
+      });
+      current = cursor
+        ? { id: cursor.id, name: cursor.name, parentId: cursor.parentId }
+        : null;
       while (cursor) {
         breadcrumb.unshift({ id: cursor.id, name: cursor.name });
         cursor = cursor.parentId
-          ? await this.prisma.folder.findUnique({ where: { id: cursor.parentId } })
+          ? await this.prisma.folder.findUnique({
+              where: { id: cursor.parentId },
+            })
           : null;
       }
     }
@@ -455,7 +673,9 @@ export class CloudStorageService {
           folderId: f.folderId,
           enc_fek: f.permissions[0]?.enc_fek ?? null,
           signature: data.signature ?? null,
-          signedBy: data.signedById ? f.owner : null,
+          signedBy: data.signedById
+            ? (signers.get(data.signedById) ?? null)
+            : null,
           sharedCount: (f as any)._count?.permissions ?? 0,
         };
       }),
@@ -472,11 +692,22 @@ export class CloudStorageService {
     if (!trimmed) throw new BadRequestException('Le nom du dossier est requis');
     const parent = await this.getOwnedFolder(userId, parentId);
     if (parent && parent.provider !== provider) {
-      throw new BadRequestException('Le dossier parent appartient à un autre provider');
+      throw new BadRequestException(
+        'Le dossier parent appartient à un autre provider',
+      );
     }
-    const providerId = provider === 'google-drive'
-      ? await this.googleDriveService.createFolder(trimmed, parent?.providerId ?? null, userId)
-      : await this.dropboxService.createFolder(trimmed, parent?.providerId ?? null, userId);
+    const providerId =
+      provider === 'google-drive'
+        ? await this.googleDriveService.createFolder(
+            trimmed,
+            parent?.providerId ?? null,
+            userId,
+          )
+        : await this.dropboxService.createFolder(
+            trimmed,
+            parent?.providerId ?? null,
+            userId,
+          );
 
     const folder = await this.prisma.folder.create({
       data: { ownerId: userId, name: trimmed, parentId, providerId, provider },
@@ -502,43 +733,93 @@ export class CloudStorageService {
   ): Promise<FolderItem> {
     const currentFolder = await this.getOwnedFolder(userId, folderId);
 
-    const data: { name?: string; parentId?: string | null; providerId?: string | null } = {};
+    const data: {
+      name?: string;
+      parentId?: string | null;
+      providerId?: string | null;
+    } = {};
     let nextParentProviderId: string | null | undefined;
 
     if (changes.name !== undefined) {
       const trimmed = changes.name.trim();
-      if (!trimmed) throw new BadRequestException('Le nom du dossier est requis');
+      if (!trimmed)
+        throw new BadRequestException('Le nom du dossier est requis');
       data.name = trimmed;
     }
 
     if (changes.parentId !== undefined) {
-      if (changes.parentId === folderId) throw new BadRequestException('Un dossier ne peut pas être son propre parent');
+      if (changes.parentId === folderId)
+        throw new BadRequestException(
+          'Un dossier ne peut pas être son propre parent',
+        );
       const nextParent = await this.getOwnedFolder(userId, changes.parentId);
       if (nextParent && nextParent.provider !== currentFolder?.provider) {
-        throw new BadRequestException('Impossible de déplacer un dossier vers un autre provider');
+        throw new BadRequestException(
+          'Impossible de déplacer un dossier vers un autre provider',
+        );
       }
       // Empêche les cycles : la cible ne doit pas être un descendant du dossier déplacé.
-      if (changes.parentId && (await this.isDescendant(changes.parentId, folderId))) {
-        throw new BadRequestException('Impossible de déplacer un dossier dans l\'un de ses sous-dossiers');
+      if (
+        changes.parentId &&
+        (await this.isDescendant(changes.parentId, folderId))
+      ) {
+        throw new BadRequestException(
+          "Impossible de déplacer un dossier dans l'un de ses sous-dossiers",
+        );
       }
       data.parentId = changes.parentId;
       nextParentProviderId = nextParent?.providerId ?? null;
     }
 
-    if (currentFolder?.providerId && currentFolder.provider === 'google-drive' && data.name !== undefined) {
-      await this.googleDriveService.renameItem(currentFolder.providerId, data.name, userId);
+    if (
+      currentFolder?.providerId &&
+      currentFolder.provider === 'google-drive' &&
+      data.name !== undefined
+    ) {
+      await this.googleDriveService.renameItem(
+        currentFolder.providerId,
+        data.name,
+        userId,
+      );
     }
-    if (currentFolder?.providerId && currentFolder.provider === 'google-drive' && nextParentProviderId !== undefined) {
-      await this.googleDriveService.moveItem(currentFolder.providerId, nextParentProviderId, userId);
+    if (
+      currentFolder?.providerId &&
+      currentFolder.provider === 'google-drive' &&
+      nextParentProviderId !== undefined
+    ) {
+      await this.googleDriveService.moveItem(
+        currentFolder.providerId,
+        nextParentProviderId,
+        userId,
+      );
     }
-    if (currentFolder?.providerId && currentFolder.provider === 'dropbox' && data.name !== undefined) {
-      data.providerId = await this.dropboxService.renameItem(currentFolder.providerId, data.name, userId);
+    if (
+      currentFolder?.providerId &&
+      currentFolder.provider === 'dropbox' &&
+      data.name !== undefined
+    ) {
+      data.providerId = await this.dropboxService.renameItem(
+        currentFolder.providerId,
+        data.name,
+        userId,
+      );
     }
-    if (currentFolder?.providerId && currentFolder.provider === 'dropbox' && nextParentProviderId !== undefined) {
-      data.providerId = await this.dropboxService.moveItem(data.providerId ?? currentFolder.providerId, nextParentProviderId, userId);
+    if (
+      currentFolder?.providerId &&
+      currentFolder.provider === 'dropbox' &&
+      nextParentProviderId !== undefined
+    ) {
+      data.providerId = await this.dropboxService.moveItem(
+        data.providerId ?? currentFolder.providerId,
+        nextParentProviderId,
+        userId,
+      );
     }
 
-    const folder = await this.prisma.folder.update({ where: { id: folderId }, data });
+    const folder = await this.prisma.folder.update({
+      where: { id: folderId },
+      data,
+    });
     return {
       id: folder.id,
       name: folder.name,
@@ -549,11 +830,17 @@ export class CloudStorageService {
   }
 
   // candidate est-il un descendant de ancestor ? (remonte la chaîne des parents)
-  private async isDescendant(candidateId: string, ancestorId: string): Promise<boolean> {
+  private async isDescendant(
+    candidateId: string,
+    ancestorId: string,
+  ): Promise<boolean> {
     let cursor: string | null = candidateId;
     while (cursor) {
       if (cursor === ancestorId) return true;
-      const node = await this.prisma.folder.findUnique({ where: { id: cursor }, select: { parentId: true } });
+      const node = await this.prisma.folder.findUnique({
+        where: { id: cursor },
+        select: { parentId: true },
+      });
       cursor = node?.parentId ?? null;
     }
     return false;
@@ -579,20 +866,33 @@ export class CloudStorageService {
     }
 
     // Supprime d'abord tous les fichiers (provider + base) — sinon ils seraient orphelinés.
-    const files = await this.prisma.file.findMany({ where: { folderId: { in: allFolderIds } } });
+    const files = await this.prisma.file.findMany({
+      where: { folderId: { in: allFolderIds } },
+    });
     for (const file of files) {
-      await this.removeFileEverywhere(file.id, file.cloud_data as unknown as CloudData, userId);
+      await this.removeFileEverywhere(
+        file.id,
+        file.cloud_data as unknown as CloudData,
+        userId,
+      );
     }
 
     if (folder?.providerId) {
       try {
-        await (folder.provider === 'dropbox' ? this.dropboxService : this.googleDriveService).deleteFile(folder.providerId, userId);
+        await (
+          folder.provider === 'dropbox'
+            ? this.dropboxService
+            : this.googleDriveService
+        ).deleteFile(folder.providerId, userId);
       } catch (e) {
-        this.logger.warn('Provider folder delete failed, removing DB folder anyway', {
-          context: CloudStorageService.name,
-          folderId,
-          error: e instanceof Error ? e.message : String(e),
-        });
+        this.logger.warn(
+          'Provider folder delete failed, removing DB folder anyway',
+          {
+            context: CloudStorageService.name,
+            folderId,
+            error: e instanceof Error ? e.message : String(e),
+          },
+        );
       }
     }
 
@@ -602,7 +902,12 @@ export class CloudStorageService {
 
     this.logger.info('Folder deleted (recursive)', {
       context: CloudStorageService.name,
-      audit: { action: 'FOLDER_DELETE', userId, folderId, fileCount: files.length },
+      audit: {
+        action: 'FOLDER_DELETE',
+        userId,
+        folderId,
+        fileCount: files.length,
+      },
     });
   }
 
@@ -620,22 +925,31 @@ export class CloudStorageService {
 
     if (changes.name !== undefined) {
       const trimmed = changes.name.trim();
-      if (!trimmed) throw new BadRequestException('Le nom du fichier est requis');
-      const targetFolderId = changes.folderId !== undefined ? changes.folderId : file.folderId;
-      const siblingFiles = (await this.prisma.file.findMany({
-        where: {
-          ownerId: file.ownerId,
-          folderId: targetFolderId,
-          id: { not: file.id },
-          cloud_data: { path: ['provider'], equals: cloudData.provider },
-        },
-      })) ?? [];
+      if (!trimmed)
+        throw new BadRequestException('Le nom du fichier est requis');
+      const targetFolderId =
+        changes.folderId !== undefined ? changes.folderId : file.folderId;
+      const siblingFiles =
+        (await this.prisma.file.findMany({
+          where: {
+            ownerId: file.ownerId,
+            folderId: targetFolderId,
+            id: { not: file.id },
+            cloud_data: { path: ['provider'], equals: cloudData.provider },
+          },
+        })) ?? [];
       const duplicate = siblingFiles.find((sibling) => {
         const siblingData = sibling.cloud_data as unknown as CloudData;
-        return siblingData.name.localeCompare(trimmed, undefined, { sensitivity: 'accent' }) === 0;
+        return (
+          siblingData.name.localeCompare(trimmed, undefined, {
+            sensitivity: 'accent',
+          }) === 0
+        );
       });
       if (duplicate) {
-        throw new ConflictException('Un fichier avec ce nom existe déjà dans ce dossier');
+        throw new ConflictException(
+          'Un fichier avec ce nom existe déjà dans ce dossier',
+        );
       }
       data.cloud_data = { ...cloudData, name: trimmed };
     }
@@ -643,25 +957,56 @@ export class CloudStorageService {
     if (changes.folderId !== undefined) {
       const nextFolder = await this.getOwnedFolder(userId, changes.folderId);
       if (nextFolder && nextFolder.provider !== cloudData.provider) {
-        throw new BadRequestException('Impossible de déplacer un fichier vers un autre provider');
+        throw new BadRequestException(
+          'Impossible de déplacer un fichier vers un autre provider',
+        );
       }
       data.folderId = changes.folderId;
       nextParentProviderId = nextFolder?.providerId ?? null;
     }
 
     if (cloudData.provider === 'google-drive' && data.cloud_data?.name) {
-      await this.googleDriveService.renameItem(cloudData.providerId, data.cloud_data.name, userId);
+      await this.googleDriveService.renameItem(
+        cloudData.providerId,
+        data.cloud_data.name,
+        userId,
+      );
     }
-    if (cloudData.provider === 'google-drive' && nextParentProviderId !== undefined) {
-      await this.googleDriveService.moveItem(cloudData.providerId, nextParentProviderId, userId);
+    if (
+      cloudData.provider === 'google-drive' &&
+      nextParentProviderId !== undefined
+    ) {
+      await this.googleDriveService.moveItem(
+        cloudData.providerId,
+        nextParentProviderId,
+        userId,
+      );
     }
     if (cloudData.provider === 'dropbox' && data.cloud_data?.name) {
-      cloudData.providerId = await this.dropboxService.renameItem(cloudData.providerId, data.cloud_data.name, userId);
-      data.cloud_data = { ...data.cloud_data, providerId: cloudData.providerId };
+      cloudData.providerId = await this.dropboxService.renameItem(
+        cloudData.providerId,
+        data.cloud_data.name,
+        userId,
+      );
+      data.cloud_data = {
+        ...data.cloud_data,
+        providerId: cloudData.providerId,
+      };
     }
-    if (cloudData.provider === 'dropbox' && nextParentProviderId !== undefined) {
-      cloudData.providerId = await this.dropboxService.moveItem(cloudData.providerId, nextParentProviderId, userId);
-      data.cloud_data = { ...cloudData, ...(data.cloud_data ?? {}), providerId: cloudData.providerId };
+    if (
+      cloudData.provider === 'dropbox' &&
+      nextParentProviderId !== undefined
+    ) {
+      cloudData.providerId = await this.dropboxService.moveItem(
+        cloudData.providerId,
+        nextParentProviderId,
+        userId,
+      );
+      data.cloud_data = {
+        ...cloudData,
+        ...(data.cloud_data ?? {}),
+        providerId: cloudData.providerId,
+      };
     }
 
     await this.prisma.file.update({ where: { id: fileId }, data });
@@ -678,12 +1023,18 @@ export class CloudStorageService {
     encFek: string,
     read = true,
     write = false,
+    manage = false,
   ): Promise<FileShareItem> {
     const trimmedEncFek = (encFek ?? '').trim();
-    if (!trimmedEncFek) throw new BadRequestException('La clé de fichier chiffrée est requise');
-    if (write) throw new BadRequestException("Le partage en écriture n'est pas encore disponible");
-    if (!read && !write) throw new BadRequestException('Au moins un droit de partage est requis');
-    if (recipientUserId === ownerId) throw new BadRequestException('Impossible de partager un fichier avec soi-même');
+    if (!trimmedEncFek)
+      throw new BadRequestException('La clé de fichier chiffrée est requise');
+    const nextRead = read || write || manage;
+    if (!nextRead && !write && !manage)
+      throw new BadRequestException('Au moins un droit de partage est requis');
+    if (recipientUserId === ownerId)
+      throw new BadRequestException(
+        'Impossible de partager un fichier avec soi-même',
+      );
 
     const [file, recipient] = await Promise.all([
       this.prisma.file.findUnique({ where: { id: fileId } }),
@@ -693,26 +1044,50 @@ export class CloudStorageService {
       }),
     ]);
 
-    if (!file) throw new NotFoundException(`Fichier introuvable (id: ${fileId})`);
-    if (file.ownerId !== ownerId) throw new ForbiddenException('Seul le propriétaire peut partager ce fichier');
-    if (!recipient) throw new NotFoundException(`Utilisateur introuvable (id: ${recipientUserId})`);
+    if (!file)
+      throw new NotFoundException(`Fichier introuvable (id: ${fileId})`);
+    if (file.ownerId !== ownerId)
+      await this.assertFilePermission(fileId, ownerId, 'manage');
+    if (!recipient)
+      throw new NotFoundException(
+        `Utilisateur introuvable (id: ${recipientUserId})`,
+      );
+    if (recipientUserId === file.ownerId)
+      throw new BadRequestException(
+        'Impossible de modifier la permission propriétaire',
+      );
 
     const permission = await this.prisma.filePermission.upsert({
       where: { fileId_userId: { fileId, userId: recipientUserId } },
-      update: { enc_fek: trimmedEncFek, read, write, grantedById: ownerId },
+      update: {
+        enc_fek: trimmedEncFek,
+        read: nextRead,
+        write,
+        manage,
+        grantedById: ownerId,
+      },
       create: {
         fileId,
         userId: recipientUserId,
         enc_fek: trimmedEncFek,
-        read,
+        read: nextRead,
         write,
+        manage,
         grantedById: ownerId,
       },
     });
 
     this.logger.info('File shared', {
       context: CloudStorageService.name,
-      audit: { action: 'FILE_SHARE', ownerId, fileId, recipientUserId, read, write },
+      audit: {
+        action: 'FILE_SHARE',
+        ownerId,
+        fileId,
+        recipientUserId,
+        read: nextRead,
+        write,
+        manage,
+      },
     });
 
     return {
@@ -721,18 +1096,28 @@ export class CloudStorageService {
       email: recipient.email,
       read: permission.read,
       write: permission.write,
+      manage: permission.manage,
       grantedAt: permission.grantedAt,
     };
   }
 
-  async listFileShares(ownerId: string, fileId: string): Promise<FileShareItem[]> {
+  async listFileShares(
+    actorId: string,
+    fileId: string,
+  ): Promise<FileShareItem[]> {
     const file = await this.prisma.file.findUnique({ where: { id: fileId } });
-    if (!file) throw new NotFoundException(`Fichier introuvable (id: ${fileId})`);
-    if (file.ownerId !== ownerId) throw new ForbiddenException('Seul le propriétaire peut consulter les partages');
+    if (!file)
+      throw new NotFoundException(`Fichier introuvable (id: ${fileId})`);
+    if (file.ownerId !== actorId)
+      await this.assertFilePermission(fileId, actorId, 'manage');
 
     const permissions = await this.prisma.filePermission.findMany({
-      where: { fileId, userId: { not: ownerId } },
-      include: { user: { select: { id: true, username: true, email: true, pub_key: true } } },
+      where: { fileId, userId: { not: file.ownerId } },
+      include: {
+        user: {
+          select: { id: true, username: true, email: true, pub_key: true },
+        },
+      },
       orderBy: { grantedAt: 'desc' },
     });
 
@@ -743,29 +1128,115 @@ export class CloudStorageService {
       pub_key: p.user.pub_key,
       read: p.read,
       write: p.write,
+      manage: p.manage,
       grantedAt: p.grantedAt,
     }));
   }
 
-  async revokeFileShare(ownerId: string, fileId: string, recipientUserId: string): Promise<void> {
+  async revokeFileShare(
+    actorId: string,
+    fileId: string,
+    recipientUserId: string,
+  ): Promise<void> {
     const file = await this.prisma.file.findUnique({ where: { id: fileId } });
-    if (!file) throw new NotFoundException(`Fichier introuvable (id: ${fileId})`);
-    if (file.ownerId !== ownerId) throw new ForbiddenException('Seul le propriétaire peut révoquer ce partage');
-    if (recipientUserId === ownerId) throw new BadRequestException('Impossible de supprimer la permission propriétaire');
+    if (!file)
+      throw new NotFoundException(`Fichier introuvable (id: ${fileId})`);
+    if (file.ownerId !== actorId)
+      await this.assertFilePermission(fileId, actorId, 'manage');
+    if (recipientUserId === file.ownerId)
+      throw new BadRequestException(
+        'Impossible de supprimer la permission propriétaire',
+      );
+    if (recipientUserId === actorId)
+      throw new BadRequestException(
+        'Impossible de supprimer vos propres droits de gestion',
+      );
 
     await this.prisma.filePermission.delete({
       where: { fileId_userId: { fileId, userId: recipientUserId } },
     });
   }
 
+  async updateFileShare(
+    actorId: string,
+    fileId: string,
+    recipientUserId: string,
+    rights: { read?: boolean; write?: boolean; manage?: boolean },
+  ): Promise<FileShareItem> {
+    const file = await this.prisma.file.findUnique({ where: { id: fileId } });
+    if (!file)
+      throw new NotFoundException(`Fichier introuvable (id: ${fileId})`);
+    if (file.ownerId !== actorId)
+      await this.assertFilePermission(fileId, actorId, 'manage');
+    if (recipientUserId === file.ownerId)
+      throw new BadRequestException(
+        'Impossible de modifier la permission propriétaire',
+      );
+    if (recipientUserId === actorId)
+      throw new BadRequestException(
+        'Impossible de modifier vos propres droits de gestion',
+      );
+
+    const existing = await this.prisma.filePermission.findUnique({
+      where: { fileId_userId: { fileId, userId: recipientUserId } },
+      include: {
+        user: {
+          select: { id: true, username: true, email: true, pub_key: true },
+        },
+      },
+    });
+    if (!existing) throw new NotFoundException('Partage introuvable');
+
+    const write = rights.write ?? existing.write;
+    const manage = rights.manage ?? existing.manage;
+    const read = (rights.read ?? existing.read) || write || manage;
+    if (!read && !write && !manage)
+      throw new BadRequestException('Au moins un droit de partage est requis');
+
+    const permission = await this.prisma.filePermission.update({
+      where: { fileId_userId: { fileId, userId: recipientUserId } },
+      data: { read, write, manage, grantedById: actorId },
+      include: {
+        user: {
+          select: { id: true, username: true, email: true, pub_key: true },
+        },
+      },
+    });
+
+    return {
+      userId: permission.user.id,
+      username: permission.user.username,
+      email: permission.user.email,
+      pub_key: permission.user.pub_key,
+      read: permission.read,
+      write: permission.write,
+      manage: permission.manage,
+      grantedAt: permission.grantedAt,
+    };
+  }
+
   async listSharedWithMe(userId: string): Promise<SharedFileItem[]> {
     const permissions = await this.prisma.filePermission.findMany({
       where: { userId, read: true, file: { ownerId: { not: userId } } },
       include: {
-        file: { include: { owner: { select: { id: true, username: true, email: true, sign_pub_key: true } } } },
+        file: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                sign_pub_key: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { grantedAt: 'desc' },
     });
+    const signers = await this.getSigners(
+      permissions.map((permission) => permission.file),
+    );
 
     return permissions.map((permission) => {
       const data = permission.file.cloud_data as unknown as CloudData;
@@ -778,38 +1249,53 @@ export class CloudStorageService {
         folderId: permission.file.folderId,
         enc_fek: permission.enc_fek,
         signature: data.signature ?? null,
-        signedBy: data.signedById ? {
-          id: permission.file.owner.id,
-          username: permission.file.owner.username,
-          sign_pub_key: permission.file.owner.sign_pub_key,
-        } : null,
+        signedBy: data.signedById
+          ? (signers.get(data.signedById) ?? null)
+          : null,
         sharedCount: 0,
         owner: permission.file.owner,
         read: permission.read,
         write: permission.write,
+        manage: permission.manage,
         sharedAt: permission.grantedAt,
       };
     });
   }
 
-  private async getFileWithPermissionCheck(fileId: string, userId: string, perm: 'read' | 'write') {
+  private async assertFilePermission(
+    fileId: string,
+    userId: string,
+    perm: 'read' | 'write' | 'manage',
+  ): Promise<void> {
+    const permission = await this.prisma.filePermission.findUnique({
+      where: { fileId_userId: { fileId, userId } },
+    });
+    if (!permission || !permission[perm]) {
+      throw new ForbiddenException(`Accès refusé au fichier (id: ${fileId})`);
+    }
+  }
+
+  private async getFileWithPermissionCheck(
+    fileId: string,
+    userId: string,
+    perm: 'read' | 'write' | 'manage',
+  ) {
     const file = await this.prisma.file.findUnique({ where: { id: fileId } });
-    if (!file) throw new NotFoundException(`Fichier introuvable (id: ${fileId})`);
+    if (!file)
+      throw new NotFoundException(`Fichier introuvable (id: ${fileId})`);
 
     if (file.ownerId !== userId) {
-      const permission = await this.prisma.filePermission.findUnique({
-        where: { fileId_userId: { fileId, userId } },
-      });
-      if (!permission || !permission[perm]) {
-        throw new ForbiddenException(`Accès refusé au fichier (id: ${fileId})`);
-      }
+      await this.assertFilePermission(fileId, userId, perm);
     }
 
     return file;
   }
 
   // Kept for internal use by other modules that still need raw provider metadata
-  async listProviderFiles(provider: CloudProvider, userId: string): Promise<FileMetadata[]> {
+  async listProviderFiles(
+    provider: CloudProvider,
+    userId: string,
+  ): Promise<FileMetadata[]> {
     return this.getProvider(provider).listFiles(userId);
   }
 }

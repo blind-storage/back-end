@@ -16,9 +16,15 @@ export class CloudStorageConnectController {
   ) {}
 
   @Get(':provider/callback')
-  @ApiOperation({ summary: 'Callback OAuth de connexion d\'un stockage (ne pas appeler directement)' })
+  @ApiOperation({
+    summary:
+      "Callback OAuth de connexion d'un stockage (ne pas appeler directement)",
+  })
   @ApiParam({ name: 'provider', enum: ['google-drive', 'dropbox'] })
-  @ApiResponse({ status: 302, description: 'Redirige vers le front avec ?connected ou ?error' })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirige vers le front avec ?connected ou ?error',
+  })
   async callback(
     @Param('provider') provider: string,
     @Query('code') code: string | undefined,
@@ -26,18 +32,26 @@ export class CloudStorageConnectController {
     @Query('error') error: string | undefined,
     @Res() res: Response,
   ): Promise<void> {
-    const base = this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:8000';
+    const base =
+      this.configService.get<string>('FRONTEND_URL') ?? 'http://localhost:8000';
 
     if (error || !code || !state) {
-      res.redirect(`${base}/storage?error=${encodeURIComponent(error ?? 'connexion annulée')}`);
+      res.redirect(
+        `${base}/storage?error=${encodeURIComponent(error ?? 'connexion annulée')}`,
+      );
       return;
     }
 
     try {
-      await this.cloudStorageService.handleConnectCallback(provider as CloudProvider, code, state);
+      await this.cloudStorageService.handleConnectCallback(
+        provider as CloudProvider,
+        code,
+        state,
+      );
       res.redirect(`${base}/storage?connected=${encodeURIComponent(provider)}`);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'échec de la connexion du stockage';
+      const message =
+        e instanceof Error ? e.message : 'échec de la connexion du stockage';
       res.redirect(`${base}/storage?error=${encodeURIComponent(message)}`);
     }
   }

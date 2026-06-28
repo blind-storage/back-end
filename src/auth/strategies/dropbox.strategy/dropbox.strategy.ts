@@ -21,10 +21,22 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {
     super({
-      apiVersion:   '2',
-      clientID:     process.env.DROPBOX_CLIENT_ID     ?? (() => { throw new Error('DROPBOX_CLIENT_ID is not defined'); })(),
-      clientSecret: process.env.DROPBOX_CLIENT_SECRET ?? (() => { throw new Error('DROPBOX_CLIENT_SECRET is not defined'); })(),
-      callbackURL:  process.env.DROPBOX_CALLBACK_URL  ?? (() => { throw new Error('DROPBOX_CALLBACK_URL is not defined'); })(),
+      apiVersion: '2',
+      clientID:
+        process.env.DROPBOX_CLIENT_ID ??
+        (() => {
+          throw new Error('DROPBOX_CLIENT_ID is not defined');
+        })(),
+      clientSecret:
+        process.env.DROPBOX_CLIENT_SECRET ??
+        (() => {
+          throw new Error('DROPBOX_CLIENT_SECRET is not defined');
+        })(),
+      callbackURL:
+        process.env.DROPBOX_CALLBACK_URL ??
+        (() => {
+          throw new Error('DROPBOX_CALLBACK_URL is not defined');
+        })(),
       scope: DROPBOX_STORAGE_SCOPES,
     });
   }
@@ -33,7 +45,12 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
     return { token_access_type: 'offline' };
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: Function): Promise<any> {
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: Function,
+  ): Promise<any> {
     const providerUserId = profile.id ?? profile._json?.account_id;
     const email = profile.emails?.[0]?.value ?? profile._json?.email;
 
