@@ -14,6 +14,7 @@ const ecsFormat = winston.format((info) => {
   const log: Record<string, unknown> = {
     '@timestamp': new Date().toISOString(),
     'log.level': info.level,
+    level: info.level,
     'service.name': SERVICE_NAME,
     'service.environment': ENV,
     'correlation.id': store?.get('correlationId') ?? '-',
@@ -44,10 +45,13 @@ const levelFilter = (level: string) =>
 export const winstonConfig: winston.LoggerOptions = {
   level: process.env.LOG_LEVEL ?? 'info',
   transports: [
-    // Console (dev uniquement)
-    ...(ENV !== 'production'
-      ? [new winston.transports.Console({ format: devFormat })]
-      : []),
+    // Console — pretty en dev, JSON/ECS en prod (capturé par Docker logs + Promtail)
+    new winston.transports.Console({
+      format:
+        ENV === 'production'
+          ? winston.format.combine(ecsFormat, winston.format.json())
+          : devFormat,
+    }),
 
     // access.log — toutes les requêtes HTTP (info)
     new winston.transports.File({
