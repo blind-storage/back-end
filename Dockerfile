@@ -19,7 +19,7 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder --chown=nestjs:nodejs /workspace/backend/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /workspace/backend/prisma ./prisma
 COPY --from=builder --chown=nestjs:nodejs /workspace/backend/package.json ./
-COPY --from=builder --chown=nestjs:nodejs /workspace/backend/dist/prisma.config.js ./prisma.config.js
+COPY --chown=nestjs:nodejs prisma.config.ts ./prisma.config.ts
 USER nestjs
 CMD ["npx", "prisma", "migrate", "deploy"]
 
