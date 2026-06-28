@@ -68,14 +68,16 @@ export class GoogleDriveService implements CloudStorageProvider {
 
   // ─── Connexion du stockage Drive (OAuth dédié, découplé du login) ──────────
 
-  async getConnectAuthUrl(state: string): Promise<string> {
-    return this.createOAuthClient().generateAuthUrl({
-      access_type: 'offline', // => refresh_token
-      prompt: 'consent', // force le refresh_token à chaque consentement
-      include_granted_scopes: true,
-      scope: [DRIVE_SCOPE],
-      state,
-    });
+  getConnectAuthUrl(state: string): Promise<string> {
+    return Promise.resolve(
+      this.createOAuthClient().generateAuthUrl({
+        access_type: 'offline', // => refresh_token
+        prompt: 'consent', // force le refresh_token à chaque consentement
+        include_granted_scopes: true,
+        scope: [DRIVE_SCOPE],
+        state,
+      }),
+    );
   }
 
   async exchangeConnectCode(code: string): Promise<StorageConnection> {

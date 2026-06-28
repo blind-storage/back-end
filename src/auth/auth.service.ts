@@ -61,7 +61,7 @@ function isPendingLink(user: OidcCallbackUser): user is PendingLinkProfile {
   return (user as PendingLinkProfile).pendingLink === true;
 }
 
-function providerGrantsCloudStorage(provider: OidcProvider | string): boolean {
+function providerGrantsCloudStorage(provider: string): boolean {
   return provider === OidcProvider.GOOGLE || provider === OidcProvider.DROPBOX;
 }
 

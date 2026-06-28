@@ -45,9 +45,7 @@ export class AuthController {
   private redirectOidcResult(
     res: Response,
     result:
-      | AuthResponseDto
-      | OidcPendingResponseDto
-      | OidcLinkPendingResponseDto,
+      AuthResponseDto | OidcPendingResponseDto | OidcLinkPendingResponseDto,
   ): void {
     const base = process.env.FRONTEND_URL ?? 'http://localhost:8000';
     let url: string;

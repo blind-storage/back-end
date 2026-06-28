@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { OidcProvider, OidcSetupDto, Role } from '@blind-storage/types';
+import { OidcProvider, OidcSetupDto } from '@blind-storage/types';
 import type { PendingOidcProfile } from '@blind-storage/types';
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
@@ -107,8 +107,8 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
     jwtServiceMock.sign.mockReturnValue('signed.jwt.token');
-    prismaMock.$transaction.mockImplementation(async (fn: any) =>
-      fn(prismaMock),
+    prismaMock.$transaction.mockImplementation(
+      async (fn: any) => await fn(prismaMock),
     );
   });
 

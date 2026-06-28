@@ -120,7 +120,9 @@ export class CloudStorageService {
       case 'dropbox':
         return this.dropboxService;
       default:
-        throw new BadRequestException(`Provider inconnu : ${provider}`);
+        throw new BadRequestException(
+          `Provider inconnu : ${provider as string}`,
+        );
     }
   }
 
