@@ -46,6 +46,10 @@ function isPendingLink(user: OidcCallbackUser): user is PendingLinkProfile {
   return (user as PendingLinkProfile).pendingLink === true;
 }
 
+function providerGrantsCloudStorage(provider: OidcProvider | string): boolean {
+  return provider === OidcProvider.GOOGLE || provider === OidcProvider.DROPBOX;
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -285,6 +289,7 @@ export class AuthService {
         email: payload.email,
         accessToken: payload.accessToken,
         refreshToken: payload.refreshToken,
+        driveScope: providerGrantsCloudStorage(payload.provider),
       },
     });
 
@@ -363,6 +368,7 @@ export class AuthService {
           email: payload.email,
           accessToken: payload.accessToken,
           refreshToken: payload.refreshToken,
+          driveScope: providerGrantsCloudStorage(payload.provider),
         },
       });
 
@@ -435,6 +441,7 @@ export class AuthService {
         email,
         accessToken,
         refreshToken,
+        driveScope: providerGrantsCloudStorage(provider),
       },
     });
 

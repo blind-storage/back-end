@@ -6,6 +6,8 @@ import { Logger } from 'winston';
 import { PrismaService } from '@/prisma.service';
 import { OidcProvider } from '@blind-storage/types';
 
+const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
@@ -16,10 +18,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       clientID:     process.env.GOOGLE_CLIENT_ID     ?? (() => { throw new Error('GOOGLE_CLIENT_ID is not defined'); })(),
       clientSecret: process.env.GOOGLE_SECRET ?? (() => { throw new Error('GOOGLE_SECRET is not defined'); })(),
       callbackURL:  process.env.GOOGLE_CALLBACK_URL  ?? (() => { throw new Error('GOOGLE_CALLBACK_URL is not defined'); })(),
-      // Login uniquement : on ne demande PAS l'accès Drive ici. Le stockage est branché
-      // séparément via GET /cloud-storage/google-drive/connect (modèle découplé).
-      scope: ['email', 'profile'],
-    });
+      accessType: 'offline',
+      prompt: 'consent',
+      includeGrantedScopes: true,
+      scope: ['email', 'profile', GOOGLE_DRIVE_SCOPE],
+    } as any);
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
@@ -71,11 +74,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       return;
     }
 
-    // Login : on met à jour l'email mais on NE TOUCHE PAS aux tokens de stockage
-    // (accessToken/refreshToken/driveScope), gérés par le flux de connexion Drive.
     await this.prisma.oidcConnection.update({
       where: { id: connection.id },
-      data: { email },
+      data: {
+        email,
+        accessToken,
+        refreshToken: refreshToken ?? connection.refreshToken,
+        driveScope: true,
+      },
     });
 
     this.logger.info('Google authentication successful', {

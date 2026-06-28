@@ -6,6 +6,14 @@ import { Logger } from 'winston';
 import { PrismaService } from '@/prisma.service';
 import { OidcProvider } from '@blind-storage/types';
 
+const DROPBOX_STORAGE_SCOPES = [
+  'account_info.read',
+  'files.metadata.read',
+  'files.metadata.write',
+  'files.content.write',
+  'files.content.read',
+];
+
 @Injectable()
 export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
   constructor(
@@ -17,7 +25,12 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
       clientID:     process.env.DROPBOX_CLIENT_ID     ?? (() => { throw new Error('DROPBOX_CLIENT_ID is not defined'); })(),
       clientSecret: process.env.DROPBOX_CLIENT_SECRET ?? (() => { throw new Error('DROPBOX_CLIENT_SECRET is not defined'); })(),
       callbackURL:  process.env.DROPBOX_CALLBACK_URL  ?? (() => { throw new Error('DROPBOX_CALLBACK_URL is not defined'); })(),
+      scope: DROPBOX_STORAGE_SCOPES,
     });
+  }
+
+  authorizationParams(): Record<string, string> {
+    return { token_access_type: 'offline' };
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any, done: Function): Promise<any> {
@@ -71,11 +84,14 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
       return;
     }
 
-    // Login : on met à jour l'email seulement. Les tokens de stockage Dropbox
-    // (avec refresh + scopes contenu) sont gérés par le flux de connexion dédié.
     await this.prisma.oidcConnection.update({
       where: { id: connection.id },
-      data: { email },
+      data: {
+        email,
+        accessToken,
+        refreshToken: refreshToken ?? connection.refreshToken,
+        driveScope: true,
+      },
     });
 
     this.logger.info('Dropbox authentication successful', {

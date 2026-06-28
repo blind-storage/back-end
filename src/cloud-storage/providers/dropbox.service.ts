@@ -32,8 +32,13 @@ export class DropboxService implements CloudStorageProvider {
     });
   }
 
+  private getRedirectUri(): string {
+    return this.configService.get<string>('DROPBOX_STORAGE_CALLBACK_URL')
+      ?? this.configService.getOrThrow<string>('DROPBOX_CALLBACK_URL');
+  }
+
   async getConnectAuthUrl(state: string): Promise<string> {
-    const redirectUri = this.configService.getOrThrow<string>('DROPBOX_STORAGE_CALLBACK_URL');
+    const redirectUri = this.getRedirectUri();
     const url = await this.createAuth().getAuthenticationUrl(
       redirectUri,
       state,
@@ -47,7 +52,7 @@ export class DropboxService implements CloudStorageProvider {
   }
 
   async exchangeConnectCode(code: string): Promise<StorageConnection> {
-    const redirectUri = this.configService.getOrThrow<string>('DROPBOX_STORAGE_CALLBACK_URL');
+    const redirectUri = this.getRedirectUri();
     const res = await this.createAuth().getAccessTokenFromCode(redirectUri, code);
     const r = res.result as {
       access_token: string;

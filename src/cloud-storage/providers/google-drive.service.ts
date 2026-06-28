@@ -19,12 +19,14 @@ export class GoogleDriveService implements CloudStorageProvider {
   ) {}
 
   // Client OAuth pour les opérations Drive (le redirect_uri importe peu ici, il sert
-  // surtout au refresh ; on garde le callback de connexion stockage pour cohérence).
+  // surtout au refresh ; on réutilise la callback Google principale si aucune
+  // callback dédiée au stockage n'est configurée.
   private createOAuthClient(): Auth.OAuth2Client {
     return new google.auth.OAuth2(
       this.configService.getOrThrow('GOOGLE_CLIENT_ID'),
       this.configService.getOrThrow('GOOGLE_SECRET'),
-      this.configService.getOrThrow('GOOGLE_DRIVE_CALLBACK_URL'),
+      this.configService.get<string>('GOOGLE_DRIVE_CALLBACK_URL')
+        ?? this.configService.getOrThrow('GOOGLE_CALLBACK_URL'),
     );
   }
 
