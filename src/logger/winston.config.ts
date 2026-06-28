@@ -14,6 +14,7 @@ const ecsFormat = winston.format((info) => {
   const log: Record<string, unknown> = {
     '@timestamp': new Date().toISOString(),
     'log.level': info.level,
+    level: info.level,
     'service.name': SERVICE_NAME,
     'service.environment': ENV,
     'correlation.id': store?.get('correlationId') ?? '-',
