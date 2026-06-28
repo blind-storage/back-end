@@ -7,6 +7,7 @@ jest.mock('otplib', () => ({
   ScureBase32Plugin: jest.fn().mockImplementation(() => ({})),
 }));
 import { PrismaService } from '../prisma.service';
+import { PkiService } from '../pki/pki.service';
 import { CreateUserDto, UpdateUserDto } from '@blind-storage/types';
 import { UsersService } from './users.service';
 import type { UserModel } from '../generated/prisma/models/User';
@@ -82,6 +83,17 @@ const prismaMock = {
   },
 };
 
+// ─── Mock PkiService ──────────────────────────────────────────────────────────
+
+const pkiServiceMock = {
+  isConfigured: jest.fn().mockReturnValue(false),
+  issueCertificate: jest.fn(),
+  revokeCertificate: jest.fn().mockResolvedValue(undefined),
+  computeFingerprint: jest.fn().mockReturnValue('fingerprint'),
+  getCrl: jest.fn(),
+  getCaPublicKey: jest.fn(),
+};
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('UsersService', () => {
@@ -92,6 +104,7 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: PrismaService, useValue: prismaMock },
+        { provide: PkiService, useValue: pkiServiceMock },
       ],
     }).compile();
 

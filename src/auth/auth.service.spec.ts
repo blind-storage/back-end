@@ -9,6 +9,7 @@ import { OidcProvider, OidcSetupDto } from '@blind-storage/types';
 import type { PendingOidcProfile } from '@blind-storage/types';
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
+import { PkiService } from '../pki/pki.service';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 
@@ -89,6 +90,15 @@ const prismaMock = {
   $transaction: jest.fn(),
 };
 
+const pkiServiceMock = {
+  isConfigured: jest.fn().mockReturnValue(false),
+  issueCertificate: jest.fn(),
+  revokeCertificate: jest.fn().mockResolvedValue(undefined),
+  computeFingerprint: jest.fn().mockReturnValue('fingerprint'),
+  getCrl: jest.fn(),
+  getCaPublicKey: jest.fn(),
+};
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('AuthService', () => {
@@ -101,6 +111,7 @@ describe('AuthService', () => {
         { provide: UsersService, useValue: usersServiceMock },
         { provide: JwtService, useValue: jwtServiceMock },
         { provide: PrismaService, useValue: prismaMock },
+        { provide: PkiService, useValue: pkiServiceMock },
       ],
     }).compile();
 
