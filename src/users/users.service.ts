@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { createHash, createHmac, randomBytes } from 'crypto';
 import { verifySync, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib';
+import { PkiService } from '../pki/pki.service';
 
 function checkTotp(token: string, secret: string): boolean {
   return verifySync({
@@ -83,13 +84,16 @@ export function buildLightPkiMaterial(user: {
   return { key_certificate, key_certificate_signature, key_fingerprint };
 }
 
-// ─── Service ────────────────────────────────��──────────────────────────��───────
+// ─── Service ────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pkiService: PkiService,
+  ) {}
 
   // ─── Create ─────────────────────────��──────────────────────────────────────
 
@@ -112,10 +116,27 @@ export class UsersService {
 
     try {
       const created = await this.prisma.user.create({ data: dto as any });
-      const pki = buildLightPkiMaterial(created);
+
+      let pkiData: Record<string, unknown>;
+      if (this.pkiService.isConfigured()) {
+        const { cert, signature, fingerprint } = this.pkiService.issueCertificate({
+          id: created.id,
+          username: created.username,
+          email: created.email,
+          pub_key: (created as any).pub_key,
+        });
+        pkiData = {
+          key_certificate: cert,
+          key_certificate_signature: signature,
+          key_fingerprint: fingerprint,
+        };
+      } else {
+        pkiData = buildLightPkiMaterial(created as any);
+      }
+
       const user = await this.prisma.user.update({
         where: { id: created.id },
-        data: pki as any,
+        data: pkiData as any,
       });
       this.logger.log(`User created successfully: ${user.id}`);
       return user;
@@ -220,7 +241,12 @@ export class UsersService {
 
   async remove(id: string): Promise<void> {
     this.logger.log(`Deleting user: ${id}`);
-    await this.findOne(id);
+    const user = await this.findOne(id);
+
+    const fingerprint = (user as any).key_fingerprint as string | null;
+    if (fingerprint && this.pkiService.isConfigured()) {
+      await this.pkiService.revokeCertificate(fingerprint, 'account_deleted');
+    }
 
     try {
       const ownedFiles = await this.prisma.file.findMany({

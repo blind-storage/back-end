@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaService } from '../prisma.service';
 import { UsersModule } from '../users/users.module';
+import { PkiModule } from '../pki/pki.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { DropboxAuthGuard } from './guards/dropbox-auth/dropbox-auth.guard';
@@ -22,6 +23,7 @@ import { RezelStrategy } from './strategies/rezel.strategy/rezel.strategy';
 @Module({
   imports: [
     UsersModule,
+    PkiModule,
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

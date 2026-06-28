@@ -161,3 +161,10 @@ model FileVersion {
 
   @@unique([fileId, version])
 }
+
+model RevokedCertificate {
+  id          String   @id @default(uuid())
+  fingerprint String   @unique
+  reason      String
+  revokedAt   DateTime @default(now())
+}
