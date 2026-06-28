@@ -10,11 +10,20 @@ import { createHash, randomBytes } from 'crypto';
 import { verifySync, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib';
 
 function checkTotp(token: string, secret: string): boolean {
-  return verifySync({ token, secret, crypto: new NobleCryptoPlugin(), base32: new ScureBase32Plugin() }).valid;
+  return verifySync({
+    token,
+    secret,
+    crypto: new NobleCryptoPlugin(),
+    base32: new ScureBase32Plugin(),
+  }).valid;
 }
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
-import { CreateUserDto, OidcConnectionDto, UpdateUserDto } from '@blind-storage/types';
+import {
+  CreateUserDto,
+  OidcConnectionDto,
+  UpdateUserDto,
+} from '@blind-storage/types';
 
 // ─── Helpers pour les codes de récupération ──────────────────────���─────────────
 
@@ -46,8 +55,12 @@ export class UsersService {
 
     if (existing) {
       const field = existing.email === dto.email ? 'email' : 'username';
-      this.logger.warn(`Conflict on field "${field}" for value "${dto[field as keyof typeof dto]}"`);
-      throw new ConflictException(`Un utilisateur avec cet ${field} existe déjà.`);
+      this.logger.warn(
+        `Conflict on field "${field}" for value "${dto[field as keyof typeof dto]}"`,
+      );
+      throw new ConflictException(
+        `Un utilisateur avec cet ${field} existe déjà.`,
+      );
     }
 
     try {
@@ -117,17 +130,25 @@ export class UsersService {
 
       if (conflict) {
         const field = conflict.email === dto.email ? 'email' : 'username';
-        throw new ConflictException(`Un utilisateur avec cet ${field} existe déjà.`);
+        throw new ConflictException(
+          `Un utilisateur avec cet ${field} existe déjà.`,
+        );
       }
     }
 
     try {
-      const updated = await this.prisma.user.update({ where: { id }, data: dto as any });
+      const updated = await this.prisma.user.update({
+        where: { id },
+        data: dto as any,
+      });
       this.logger.log(`User updated: ${id}`);
       return updated;
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error(`Failed to update user ${id}: ${err.message}`, err.stack);
+      this.logger.error(
+        `Failed to update user ${id}: ${err.message}`,
+        err.stack,
+      );
       throw error;
     }
   }
@@ -143,14 +164,17 @@ export class UsersService {
       this.logger.log(`User deleted: ${id}`);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.logger.error(`Failed to delete user ${id}: ${err.message}`, err.stack);
+      this.logger.error(
+        `Failed to delete user ${id}: ${err.message}`,
+        err.stack,
+      );
       throw error;
     }
   }
 
   // ─── Count remaining recovery codes ───────────────────────────────────────
 
-  async countRemainingRecoveryCodes(userId: string): Promise<number> {
+  countRemainingRecoveryCodes(userId: string): Promise<number> {
     return (this.prisma as any).totpRecoveryCode.count({
       where: { userId, usedAt: null },
     });
@@ -158,13 +182,19 @@ export class UsersService {
 
   // ─── TOTP enable (génère les codes de récupération) ────────────────────────
 
-  async enableTotp(id: string, secret: string, code: string): Promise<{ user: UserModel; recoveryCodes: string[] }> {
+  async enableTotp(
+    id: string,
+    secret: string,
+    code: string,
+  ): Promise<{ user: UserModel; recoveryCodes: string[] }> {
     this.logger.log(`Enabling TOTP for user: ${id}`);
     await this.findOne(id);
 
     if (!checkTotp(code, secret)) {
       this.logger.warn(`Invalid TOTP verification code for user: ${id}`);
-      throw new UnauthorizedException('Code TOTP invalide — vérifiez que votre application est bien configurée');
+      throw new UnauthorizedException(
+        'Code TOTP invalide — vérifiez que votre application est bien configurée',
+      );
     }
 
     const codes = Array.from({ length: 10 }, generateRecoveryCode);
@@ -195,7 +225,9 @@ export class UsersService {
     this.logger.log(`Disabling TOTP for user: ${id}`);
     await this.findOne(id);
 
-    await (this.prisma as any).totpRecoveryCode.deleteMany({ where: { userId: id } });
+    await (this.prisma as any).totpRecoveryCode.deleteMany({
+      where: { userId: id },
+    });
 
     return this.prisma.user.update({
       where: { id },
@@ -205,12 +237,14 @@ export class UsersService {
 
   // ─── TOTP renew recovery codes ─────────────────────────────────────────────
 
-  async renewRecoveryCodes(id: string): Promise<{ user: UserModel; recoveryCodes: string[] }> {
+  async renewRecoveryCodes(
+    id: string,
+  ): Promise<{ user: UserModel; recoveryCodes: string[] }> {
     this.logger.log(`Renewing TOTP recovery codes for user: ${id}`);
     const user = await this.findOne(id);
 
     if (!user.totpEnabled) {
-      throw new BadRequestException('Le TOTP n\'est pas activé pour ce compte');
+      throw new BadRequestException("Le TOTP n'est pas activé pour ce compte");
     }
 
     const codes = Array.from({ length: 10 }, generateRecoveryCode);
@@ -240,7 +274,8 @@ export class UsersService {
     const conn = await this.prisma.oidcConnection.findUnique({
       where: { userId_provider: { userId, provider: provider as any } },
     });
-    if (!conn) throw new NotFoundException(`Aucune connexion ${provider} trouvée`);
+    if (!conn)
+      throw new NotFoundException(`Aucune connexion ${provider} trouvée`);
     await this.prisma.oidcConnection.delete({ where: { id: conn.id } });
     this.logger.log(`OIDC connection ${provider} removed for user: ${userId}`);
   }

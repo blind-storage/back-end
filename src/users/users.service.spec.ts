@@ -1,5 +1,11 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+
+jest.mock('otplib', () => ({
+  verifySync: jest.fn().mockReturnValue({ valid: true }),
+  NobleCryptoPlugin: jest.fn().mockImplementation(() => ({})),
+  ScureBase32Plugin: jest.fn().mockImplementation(() => ({})),
+}));
 import { PrismaService } from '../prisma.service';
 import { CreateUserDto, UpdateUserDto } from '@blind-storage/types';
 import { UsersService } from './users.service';
@@ -7,20 +13,21 @@ import type { UserModel } from '../generated/prisma/models/User';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-const makeUser = (overrides: Partial<UserModel> = {}): UserModel => ({
-  id: 'uuid-1',
-  email: 'alice@example.com',
-  username: 'alice42',
-  auth_hash: '$argon2id$...',
-  salt_mp: 'salt1',
-  salt_rc: 'salt2',
-  pub_key: 'pub-key-alice',
-  priv_key_enc_1: 'enc1-alice',
-  priv_key_enc_2: 'enc2-alice',
-  totpSecret: null,
-  totpEnabled: false,
-  ...overrides,
-} as UserModel);
+const makeUser = (overrides: Partial<UserModel> = {}): UserModel =>
+  ({
+    id: 'uuid-1',
+    email: 'alice@example.com',
+    username: 'alice42',
+    auth_hash: '$argon2id$...',
+    salt_mp: 'salt1',
+    salt_rc: 'salt2',
+    pub_key: 'pub-key-alice',
+    priv_key_enc_1: 'enc1-alice',
+    priv_key_enc_2: 'enc2-alice',
+    totpSecret: null,
+    totpEnabled: false,
+    ...overrides,
+  }) as UserModel;
 
 const createDto: CreateUserDto = {
   email: 'alice@example.com',
@@ -86,7 +93,9 @@ describe('UsersService', () => {
     it('lève ConflictException si email déjà pris', async () => {
       prismaMock.user.findFirst.mockResolvedValue(makeUser());
 
-      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        ConflictException,
+      );
       expect(prismaMock.user.create).not.toHaveBeenCalled();
     });
 
@@ -95,7 +104,9 @@ describe('UsersService', () => {
         makeUser({ email: 'other@example.com', username: 'alice42' }),
       );
 
-      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createDto)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -103,13 +114,18 @@ describe('UsersService', () => {
 
   describe('findAll()', () => {
     it('retourne la liste de tous les utilisateurs', async () => {
-      const users = [makeUser(), makeUser({ id: 'uuid-2', email: 'bob@example.com', username: 'bob' })];
+      const users = [
+        makeUser(),
+        makeUser({ id: 'uuid-2', email: 'bob@example.com', username: 'bob' }),
+      ];
       prismaMock.user.findMany.mockResolvedValue(users);
 
       const result = await service.findAll();
 
       expect(result).toHaveLength(2);
-      expect(prismaMock.user.findMany).toHaveBeenCalledWith({ orderBy: { username: 'asc' } });
+      expect(prismaMock.user.findMany).toHaveBeenCalledWith({
+        orderBy: { username: 'asc' },
+      });
     });
   });
 
@@ -126,7 +142,9 @@ describe('UsersService', () => {
     it('lève NotFoundException si absent', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.findOne('unknown-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('unknown-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -154,7 +172,9 @@ describe('UsersService', () => {
     it("met à jour l'utilisateur", async () => {
       prismaMock.user.findUnique.mockResolvedValue(makeUser());
       prismaMock.user.findFirst.mockResolvedValue(null);
-      prismaMock.user.update.mockResolvedValue(makeUser({ username: 'alice-new' }));
+      prismaMock.user.update.mockResolvedValue(
+        makeUser({ username: 'alice-new' }),
+      );
 
       const result = await service.update('uuid-1', updateDto);
       expect(result.username).toBe('alice-new');
@@ -163,14 +183,20 @@ describe('UsersService', () => {
     it("lève NotFoundException si l'utilisateur est absent", async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 
-      await expect(service.update('bad-id', updateDto)).rejects.toThrow(NotFoundException);
+      await expect(service.update('bad-id', updateDto)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('lève ConflictException si le nouveau username est déjà pris', async () => {
       prismaMock.user.findUnique.mockResolvedValue(makeUser());
-      prismaMock.user.findFirst.mockResolvedValue(makeUser({ id: 'uuid-2', username: 'alice-new' }));
+      prismaMock.user.findFirst.mockResolvedValue(
+        makeUser({ id: 'uuid-2', username: 'alice-new' }),
+      );
 
-      await expect(service.update('uuid-1', updateDto)).rejects.toThrow(ConflictException);
+      await expect(service.update('uuid-1', updateDto)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 
@@ -182,7 +208,9 @@ describe('UsersService', () => {
       prismaMock.user.delete.mockResolvedValue(makeUser());
 
       await expect(service.remove('uuid-1')).resolves.toBeUndefined();
-      expect(prismaMock.user.delete).toHaveBeenCalledWith({ where: { id: 'uuid-1' } });
+      expect(prismaMock.user.delete).toHaveBeenCalledWith({
+        where: { id: 'uuid-1' },
+      });
     });
 
     it('lève NotFoundException si absent', async () => {
@@ -200,37 +228,57 @@ describe('UsersService', () => {
       prismaMock.totpRecoveryCode.deleteMany.mockResolvedValue({ count: 0 });
       prismaMock.totpRecoveryCode.createMany.mockResolvedValue({ count: 10 });
       prismaMock.user.update.mockResolvedValue(
-        makeUser({ totpEnabled: true, totpSecret: 'SECRET123' }),
+        makeUser({ totpEnabled: true, totpSecret: 'JBSWY3DPEHPK3PXP' }),
       );
 
-      const { user, recoveryCodes } = await service.enableTotp('uuid-1', 'SECRET123');
+      const { user, recoveryCodes } = await service.enableTotp(
+        'uuid-1',
+        'JBSWY3DPEHPK3PXP',
+        '000000',
+      );
 
       expect(user.totpEnabled).toBe(true);
       expect(recoveryCodes).toHaveLength(10);
-      expect(recoveryCodes[0]).toMatch(/^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/);
-      expect(prismaMock.totpRecoveryCode.deleteMany).toHaveBeenCalledWith({ where: { userId: 'uuid-1' } });
+      expect(recoveryCodes[0]).toMatch(
+        /^[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/,
+      );
+      expect(prismaMock.totpRecoveryCode.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'uuid-1' },
+      });
       expect(prismaMock.totpRecoveryCode.createMany).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.arrayContaining([expect.objectContaining({ userId: 'uuid-1' })]) }),
+        expect.objectContaining({
+          data: expect.arrayContaining([
+            expect.objectContaining({ userId: 'uuid-1' }),
+          ]),
+        }),
       );
     });
 
     it('lève NotFoundException si utilisateur absent', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
-      await expect(service.enableTotp('bad-id', 'S')).rejects.toThrow(NotFoundException);
+      await expect(service.enableTotp('bad-id', 'S')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('disableTotp()', () => {
     it('désactive le TOTP, efface le secret et purge les codes de récupération', async () => {
-      prismaMock.user.findUnique.mockResolvedValue(makeUser({ totpEnabled: true, totpSecret: 'S' }));
+      prismaMock.user.findUnique.mockResolvedValue(
+        makeUser({ totpEnabled: true, totpSecret: 'S' }),
+      );
       prismaMock.totpRecoveryCode.deleteMany.mockResolvedValue({ count: 3 });
-      prismaMock.user.update.mockResolvedValue(makeUser({ totpEnabled: false, totpSecret: null }));
+      prismaMock.user.update.mockResolvedValue(
+        makeUser({ totpEnabled: false, totpSecret: null }),
+      );
 
       const result = await service.disableTotp('uuid-1');
 
       expect(result.totpEnabled).toBe(false);
       expect(result.totpSecret).toBeNull();
-      expect(prismaMock.totpRecoveryCode.deleteMany).toHaveBeenCalledWith({ where: { userId: 'uuid-1' } });
+      expect(prismaMock.totpRecoveryCode.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'uuid-1' },
+      });
     });
   });
 
@@ -238,14 +286,22 @@ describe('UsersService', () => {
 
   describe('consumeRecoveryCode()', () => {
     it('retourne true et marque le code comme utilisé si valide', async () => {
-      prismaMock.totpRecoveryCode.findFirst.mockResolvedValue({ id: 'code-id' });
+      prismaMock.totpRecoveryCode.findFirst.mockResolvedValue({
+        id: 'code-id',
+      });
       prismaMock.totpRecoveryCode.update.mockResolvedValue({});
 
-      const result = await service.consumeRecoveryCode('uuid-1', 'A1B2-C3D4-E5F6-7890');
+      const result = await service.consumeRecoveryCode(
+        'uuid-1',
+        'A1B2-C3D4-E5F6-7890',
+      );
 
       expect(result).toBe(true);
       expect(prismaMock.totpRecoveryCode.update).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'code-id' }, data: expect.objectContaining({ usedAt: expect.any(Date) }) }),
+        expect.objectContaining({
+          where: { id: 'code-id' },
+          data: expect.objectContaining({ usedAt: expect.any(Date) }),
+        }),
       );
     });
 

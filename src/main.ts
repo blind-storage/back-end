@@ -4,7 +4,6 @@ import { AppModule } from './app.module';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import session from 'express-session';
 
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
@@ -24,7 +23,7 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Mon API')
-    .setDescription('Description de l\'API')
+    .setDescription("Description de l'API")
     .setVersion('1.0')
     .addBearerAuth()
     .build();

@@ -3,7 +3,6 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { Role } from '@blind-storage/types';
 import type { JwtUser } from '@blind-storage/types';
 import { PrismaService } from '@/prisma.service';
 
@@ -16,13 +15,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET ?? (() => { throw new Error('JWT_SECRET is not defined'); })(),
+      secretOrKey:
+        process.env.JWT_SECRET ??
+        (() => {
+          throw new Error('JWT_SECRET is not defined');
+        })(),
     });
   }
 
   async validate(payload: any): Promise<JwtUser> {
     if (payload.oidcPending || payload.oidcNonce || payload.totpPending) {
-      throw new UnauthorizedException('Token temporaire non autorisé sur cet endpoint');
+      throw new UnauthorizedException(
+        'Token temporaire non autorisé sur cet endpoint',
+      );
     }
 
     const user = await this.prisma.user.findUnique({
@@ -42,7 +47,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       audit: { action: 'JWT_AUTH_SUCCESS', userId: user.id },
     });
 
-    const { auth_hash, salt_mp, salt_rc, totpSecret, ...result } = user;
-    return result as JwtUser;
+    const {
+      auth_hash: _ah,
+      salt_mp: _sm,
+      salt_rc: _sr,
+      totpSecret: _ts,
+      ...result
+    } = user;
+    return result;
   }
 }

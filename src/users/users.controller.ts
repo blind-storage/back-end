@@ -143,14 +143,21 @@ export class UsersController {
   @Post(':id/totp/enable')
   @UseGuards(JwtAuthGuard, SelfOrAdminGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Activer le TOTP — retourne les codes de récupération (affichés une seule fois)' })
+  @ApiOperation({
+    summary:
+      'Activer le TOTP — retourne les codes de récupération (affichés une seule fois)',
+  })
   @ApiCreatedResponse({ type: EnableTotpResponseDto })
   async enableTotp(
     @Param('id', ParseUUIDPipe) id: string,
     @Body('secret') secret: string,
     @Body('code') code: string,
   ): Promise<EnableTotpResponseDto> {
-    const { user, recoveryCodes } = await this.usersService.enableTotp(id, secret, code);
+    const { user, recoveryCodes } = await this.usersService.enableTotp(
+      id,
+      secret,
+      code,
+    );
     return { user: new UserEntity(user), recovery_codes: recoveryCodes };
   }
 
@@ -160,10 +167,15 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, SelfOrAdminGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Renouveler les codes de récupération TOTP (invalide les anciens)' })
+  @ApiOperation({
+    summary: 'Renouveler les codes de récupération TOTP (invalide les anciens)',
+  })
   @ApiOkResponse({ type: EnableTotpResponseDto })
-  async renewRecoveryCodes(@Param('id', ParseUUIDPipe) id: string): Promise<EnableTotpResponseDto> {
-    const { user, recoveryCodes } = await this.usersService.renewRecoveryCodes(id);
+  async renewRecoveryCodes(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<EnableTotpResponseDto> {
+    const { user, recoveryCodes } =
+      await this.usersService.renewRecoveryCodes(id);
     return { user: new UserEntity(user), recovery_codes: recoveryCodes };
   }
 
@@ -175,7 +187,9 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Désactiver le TOTP (propriétaire ou admin)' })
   @ApiOkResponse({ type: UserEntity })
-  async disableTotp(@Param('id', ParseUUIDPipe) id: string): Promise<UserEntity> {
+  async disableTotp(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<UserEntity> {
     const user = await this.usersService.disableTotp(id);
     return new UserEntity(user);
   }

@@ -29,6 +29,7 @@ const usersServiceMock = {
   create: jest.fn(),
   findAll: jest.fn(),
   findOne: jest.fn(),
+  countRemainingRecoveryCodes: jest.fn().mockResolvedValue(5),
   update: jest.fn(),
   remove: jest.fn(),
   enableTotp: jest.fn(),
@@ -47,9 +48,12 @@ describe('UsersController', () => {
       controllers: [UsersController],
       providers: [{ provide: UsersService, useValue: usersServiceMock }],
     })
-      .overrideGuard(JwtAuthGuard).useValue(guardAllow)
-      .overrideGuard(RolesGuard).useValue(guardAllow)
-      .overrideGuard(SelfOrAdminGuard).useValue(guardAllow)
+      .overrideGuard(JwtAuthGuard)
+      .useValue(guardAllow)
+      .overrideGuard(RolesGuard)
+      .useValue(guardAllow)
+      .overrideGuard(SelfOrAdminGuard)
+      .useValue(guardAllow)
       .compile();
 
     controller = module.get<UsersController>(UsersController);
@@ -110,7 +114,9 @@ describe('UsersController', () => {
     it('propage NotFoundException du service', async () => {
       usersServiceMock.findOne.mockRejectedValue(new NotFoundException());
 
-      await expect(controller.findOne('bad-id')).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne('bad-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -145,13 +151,24 @@ describe('UsersController', () => {
   describe('enableTotp()', () => {
     it('retourne user + codes de récupération', async () => {
       const codes = ['A1B2-C3D4-E5F6-7890', 'FFFF-EEEE-DDDD-CCCC'];
-      usersServiceMock.enableTotp.mockResolvedValue({ user: { ...mockUser, totpEnabled: true }, recoveryCodes: codes });
+      usersServiceMock.enableTotp.mockResolvedValue({
+        user: { ...mockUser, totpEnabled: true },
+        recoveryCodes: codes,
+      });
 
-      const result = await controller.enableTotp('uuid-1', 'TOTP_SECRET');
+      const result = await controller.enableTotp(
+        'uuid-1',
+        'TOTP_SECRET',
+        '123456',
+      );
 
       expect(result.user.totpEnabled).toBe(true);
       expect(result.recovery_codes).toHaveLength(2);
-      expect(usersServiceMock.enableTotp).toHaveBeenCalledWith('uuid-1', 'TOTP_SECRET');
+      expect(usersServiceMock.enableTotp).toHaveBeenCalledWith(
+        'uuid-1',
+        'TOTP_SECRET',
+        '123456',
+      );
     });
   });
 

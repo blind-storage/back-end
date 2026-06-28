@@ -1,0 +1,6 @@
+# Fichiers sensibles — review obligatoire par un owner
+.github/workflows/    @thomas-cad @SlaouiX
+.github/CODEOWNERS    @thomas-cad @SlaouiX
+Dockerfile            @thomas-cad @SlaouiX
+entrypoint.sh         @thomas-cad @SlaouiX
+prisma/               @thomas-cad @SlaouiX
