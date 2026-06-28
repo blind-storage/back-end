@@ -13,14 +13,31 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {
     super({
-      clientID:     process.env.GOOGLE_CLIENT_ID     ?? (() => { throw new Error('GOOGLE_CLIENT_ID is not defined'); })(),
-      clientSecret: process.env.GOOGLE_SECRET ?? (() => { throw new Error('GOOGLE_SECRET is not defined'); })(),
-      callbackURL:  process.env.GOOGLE_CALLBACK_URL  ?? (() => { throw new Error('GOOGLE_CALLBACK_URL is not defined'); })(),
+      clientID:
+        process.env.GOOGLE_CLIENT_ID ??
+        (() => {
+          throw new Error('GOOGLE_CLIENT_ID is not defined');
+        })(),
+      clientSecret:
+        process.env.GOOGLE_SECRET ??
+        (() => {
+          throw new Error('GOOGLE_SECRET is not defined');
+        })(),
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL ??
+        (() => {
+          throw new Error('GOOGLE_CALLBACK_URL is not defined');
+        })(),
       scope: ['email', 'profile'],
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: VerifyCallback,
+  ): Promise<any> {
     const { emails, id: providerUserId } = profile;
     const email = emails[0].value;
 
@@ -35,13 +52,22 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
 
     if (!connection) {
-      const existingUser = await this.prisma.user.findUnique({ where: { email } });
+      const existingUser = await this.prisma.user.findUnique({
+        where: { email },
+      });
 
       if (existingUser) {
-        this.logger.warn('Google login: existing account found, returning pending link', {
-          context: GoogleStrategy.name,
-          audit: { action: 'GOOGLE_AUTH_PENDING_LINK', providerUserId, email },
-        });
+        this.logger.warn(
+          'Google login: existing account found, returning pending link',
+          {
+            context: GoogleStrategy.name,
+            audit: {
+              action: 'GOOGLE_AUTH_PENDING_LINK',
+              providerUserId,
+              email,
+            },
+          },
+        );
         done(null, {
           pendingLink: true,
           userId: existingUser.id,
@@ -54,10 +80,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         return;
       }
 
-      this.logger.warn('Google login: no account found, returning pending setup', {
-        context: GoogleStrategy.name,
-        audit: { action: 'GOOGLE_AUTH_PENDING_SETUP', providerUserId, email },
-      });
+      this.logger.warn(
+        'Google login: no account found, returning pending setup',
+        {
+          context: GoogleStrategy.name,
+          audit: { action: 'GOOGLE_AUTH_PENDING_SETUP', providerUserId, email },
+        },
+      );
       done(null, {
         pendingSetup: true,
         provider: OidcProvider.GOOGLE,

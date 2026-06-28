@@ -13,14 +13,31 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
   ) {
     super({
-      apiVersion:   '2',
-      clientID:     process.env.DROPBOX_CLIENT_ID     ?? (() => { throw new Error('DROPBOX_CLIENT_ID is not defined'); })(),
-      clientSecret: process.env.DROPBOX_CLIENT_SECRET ?? (() => { throw new Error('DROPBOX_CLIENT_SECRET is not defined'); })(),
-      callbackURL:  process.env.DROPBOX_CALLBACK_URL  ?? (() => { throw new Error('DROPBOX_CALLBACK_URL is not defined'); })(),
+      apiVersion: '2',
+      clientID:
+        process.env.DROPBOX_CLIENT_ID ??
+        (() => {
+          throw new Error('DROPBOX_CLIENT_ID is not defined');
+        })(),
+      clientSecret:
+        process.env.DROPBOX_CLIENT_SECRET ??
+        (() => {
+          throw new Error('DROPBOX_CLIENT_SECRET is not defined');
+        })(),
+      callbackURL:
+        process.env.DROPBOX_CALLBACK_URL ??
+        (() => {
+          throw new Error('DROPBOX_CALLBACK_URL is not defined');
+        })(),
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: Function): Promise<any> {
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: Function,
+  ): Promise<any> {
     const providerUserId = profile.id ?? profile._json?.account_id;
     const email = profile.emails?.[0]?.value ?? profile._json?.email;
 
@@ -40,10 +57,17 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
         : null;
 
       if (existingUser) {
-        this.logger.warn('Dropbox login: existing account found, returning pending link', {
-          context: DropboxStrategy.name,
-          audit: { action: 'DROPBOX_AUTH_PENDING_LINK', providerUserId, email },
-        });
+        this.logger.warn(
+          'Dropbox login: existing account found, returning pending link',
+          {
+            context: DropboxStrategy.name,
+            audit: {
+              action: 'DROPBOX_AUTH_PENDING_LINK',
+              providerUserId,
+              email,
+            },
+          },
+        );
         done(null, {
           pendingLink: true,
           userId: existingUser.id,
@@ -56,10 +80,17 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
         return;
       }
 
-      this.logger.warn('Dropbox login: no account found, returning pending setup', {
-        context: DropboxStrategy.name,
-        audit: { action: 'DROPBOX_AUTH_PENDING_SETUP', providerUserId, email },
-      });
+      this.logger.warn(
+        'Dropbox login: no account found, returning pending setup',
+        {
+          context: DropboxStrategy.name,
+          audit: {
+            action: 'DROPBOX_AUTH_PENDING_SETUP',
+            providerUserId,
+            email,
+          },
+        },
+      );
       done(null, {
         pendingSetup: true,
         provider: OidcProvider.DROPBOX,

@@ -1,7 +1,16 @@
 const SENSITIVE_KEYS = [
-  'password', 'passwd', 'secret', 'token', 'authorization',
-  'access_token', 'refresh_token', 'apiKey', 'api_key',
-  'credit_card', 'ssn', 'cvv',
+  'password',
+  'passwd',
+  'secret',
+  'token',
+  'authorization',
+  'access_token',
+  'refresh_token',
+  'apiKey',
+  'api_key',
+  'credit_card',
+  'ssn',
+  'cvv',
 ];
 
 const SENSITIVE_PATTERN = new RegExp(
@@ -16,9 +25,7 @@ export function maskSensitiveData(data: unknown): unknown {
   if (typeof data === 'object' && data !== null) {
     const masked: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
-      masked[key] = SENSITIVE_KEYS.some((k) =>
-        key.toLowerCase().includes(k),
-      )
+      masked[key] = SENSITIVE_KEYS.some((k) => key.toLowerCase().includes(k))
         ? '[REDACTED]'
         : maskSensitiveData(value);
     }
