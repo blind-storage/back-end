@@ -50,6 +50,7 @@ import {
   buildLightPkiMaterial,
   hashRecoveryCode,
 } from '../users/users.service';
+import { PkiService } from '../pki/pki.service';
 
 type OidcCallbackUser = UserModel | PendingOidcProfile | PendingLinkProfile;
 
@@ -73,6 +74,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
+    private readonly pkiService: PkiService,
   ) {}
 
   // Local auth
@@ -464,9 +466,26 @@ export class AuthService {
         } as any,
       });
 
+      const pkiData = this.pkiService.isConfigured()
+        ? (() => {
+            const { cert, signature, fingerprint } =
+              this.pkiService.issueCertificate({
+                id: newUser.id,
+                username: newUser.username,
+                email: newUser.email,
+                pub_key: (newUser as any).pub_key,
+              });
+            return {
+              key_certificate: cert,
+              key_certificate_signature: signature,
+              key_fingerprint: fingerprint,
+            };
+          })()
+        : buildLightPkiMaterial(newUser as any);
+
       const pkiUser = await tx.user.update({
         where: { id: newUser.id },
-        data: buildLightPkiMaterial(newUser) as any,
+        data: pkiData as any,
       });
 
       await tx.oidcConnection.create({

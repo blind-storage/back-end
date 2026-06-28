@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CloudStorageModule } from './cloud-storage/cloud-storage.module';
+import { PkiModule } from './pki/pki.module';
 import { WinstonModule } from 'nest-winston';
 import { winstonConfig } from './logger/winston.config';
 import { CorrelationMiddleware } from './logger/correlation.middleware';
@@ -16,6 +17,7 @@ import { HttpLoggerMiddleware } from './logger/http-logger.middleware';
     UsersModule,
     AuthModule,
     CloudStorageModule,
+    PkiModule,
     WinstonModule.forRoot(winstonConfig),
   ],
   controllers: [AppController],
