@@ -12,6 +12,11 @@ import { PrismaService } from '../prisma.service';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 
+// Modèle "blind" : le client dérive l'auth_hash côté navigateur et l'envoie dans
+// le champ `password`. Le serveur le compare (timingSafeEqual) au hash stocké —
+// pas de bcrypt côté serveur. Le mot de passe valide est donc l'auth_hash stocké.
+const AUTH_HASH = '$2b$10$hashedpassword';
+
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 const makeUser = (overrides: Partial<UserModel> = {}): UserModel =>
@@ -19,7 +24,7 @@ const makeUser = (overrides: Partial<UserModel> = {}): UserModel =>
     id: 'uuid-1',
     email: 'alice@example.com',
     username: 'alice42',
-    auth_hash: '$2b$10$hashedpassword',
+    auth_hash: AUTH_HASH,
     salt_mp: 'salt1',
     salt_rc: 'salt2',
     pub_key: 'pub-key-alice',
@@ -47,7 +52,7 @@ const makeOidcSetupDto = (
 ): OidcSetupDto => ({
   setup_token: 'valid.pending.token',
   username: 'alice42',
-  auth_hash: '$2b$10$hashedpassword',
+  auth_hash: AUTH_HASH,
   pub_key: 'pub-key',
   priv_key_enc_1: 'enc1',
   priv_key_enc_2: 'enc2',
@@ -102,7 +107,9 @@ describe('AuthService', () => {
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
     jwtServiceMock.sign.mockReturnValue('signed.jwt.token');
-    prismaMock.$transaction.mockImplementation((fn: any) => fn(prismaMock));
+    prismaMock.$transaction.mockImplementation(
+      async (fn: any) => await fn(prismaMock),
+    );
   });
 
   // ── validateUser ────────────────────────────────────────────────────────────
@@ -111,10 +118,8 @@ describe('AuthService', () => {
     it("retourne l'utilisateur si les identifiants sont corrects", async () => {
       usersServiceMock.findByUsername.mockResolvedValue(makeUser());
 
-      const result = await service.validateUser(
-        'alice42',
-        '$2b$10$hashedpassword',
-      );
+      // Le client envoie l'auth_hash, comparé au hash stocké.
+      const result = await service.validateUser('alice42', AUTH_HASH);
 
       expect(result).not.toBeNull();
       expect(result?.id).toBe('uuid-1');
@@ -206,6 +211,9 @@ describe('AuthService', () => {
       jwtServiceMock.verify.mockReturnValue(pendingPayload);
       prismaMock.oidcConnection.findUnique.mockResolvedValue(null);
       prismaMock.user.create.mockResolvedValue(makeUser());
+      prismaMock.user.update.mockResolvedValue(
+        makeUser({ key_fingerprint: 'fingerprint' }),
+      );
       prismaMock.oidcConnection.create.mockResolvedValue({});
 
       const result = await service.completeOidcSetup(makeOidcSetupDto());
@@ -213,7 +221,7 @@ describe('AuthService', () => {
       expect(result.access_token).toBe('signed.jwt.token');
       expect(prismaMock.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ username: 'alice42' }),
+          data: expect.objectContaining({ auth_hash: AUTH_HASH }),
         }),
       );
     });
@@ -265,7 +273,7 @@ describe('AuthService', () => {
 
       const result = await service.recoverWithCode(
         'alice42',
-        '$2b$10$hashedpassword',
+        AUTH_HASH,
         'A1B2-C3D4-E5F6-7890',
       );
 
@@ -295,7 +303,7 @@ describe('AuthService', () => {
         makeUser({ totpEnabled: false }),
       );
       await expect(
-        service.recoverWithCode('alice42', '$2b$10$hashedpassword', 'code'),
+        service.recoverWithCode('alice42', AUTH_HASH, 'code'),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -305,7 +313,7 @@ describe('AuthService', () => {
       );
       prismaMock.totpRecoveryCode.findFirst.mockResolvedValue(null);
       await expect(
-        service.recoverWithCode('alice42', '$2b$10$hashedpassword', 'BAD-CODE'),
+        service.recoverWithCode('alice42', AUTH_HASH, 'BAD-CODE'),
       ).rejects.toThrow(UnauthorizedException);
     });
   });

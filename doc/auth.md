@@ -208,7 +208,7 @@ sequenceDiagram
     Note over C: Nouveau MP saisi<br/>Dérive nouveau auth_hash = KDF(NMP, nouveau_salt_mp)<br/>Dérive nouvelle KEK_1<br/>Déchiffre priv_key avec ancienne KEK_1<br/>Re-chiffre priv_key avec nouvelle KEK_1
     C->>S: POST /auth/change-password<br/>{ auth_hash, priv_key_enc_1, salt_mp }
     S->>S: Met à jour auth_hash, priv_key_enc_1, salt_mp
-    S-->>C: 200 OK
+    S-->>C: 204 No Content
 ```
 
 > `priv_key_enc_2` et `salt_rc` restent inchangés (dérivés du code de récupération, pas du MP).

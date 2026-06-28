@@ -45,7 +45,11 @@ import type {
 } from '@blind-storage/types';
 import type { UserModel } from '../generated/prisma/models/User';
 import { PrismaService } from '../prisma.service';
-import { UsersService, hashRecoveryCode } from '../users/users.service';
+import {
+  UsersService,
+  buildLightPkiMaterial,
+  hashRecoveryCode,
+} from '../users/users.service';
 
 type OidcCallbackUser = UserModel | PendingOidcProfile | PendingLinkProfile;
 
@@ -55,6 +59,10 @@ function isPendingSetup(user: OidcCallbackUser): user is PendingOidcProfile {
 
 function isPendingLink(user: OidcCallbackUser): user is PendingLinkProfile {
   return (user as PendingLinkProfile).pendingLink === true;
+}
+
+function providerGrantsCloudStorage(provider: string): boolean {
+  return provider === OidcProvider.GOOGLE || provider === OidcProvider.DROPBOX;
 }
 
 @Injectable()
@@ -382,6 +390,7 @@ export class AuthService {
         email: payload.email,
         accessToken: payload.accessToken,
         refreshToken: payload.refreshToken,
+        driveScope: providerGrantsCloudStorage(payload.provider),
       },
     });
 
@@ -446,24 +455,33 @@ export class AuthService {
           pub_key: dto.pub_key,
           priv_key_enc_1: dto.priv_key_enc_1,
           priv_key_enc_2: dto.priv_key_enc_2,
+          sign_pub_key: dto.sign_pub_key,
+          sign_priv_key_enc_1: dto.sign_priv_key_enc_1,
+          sign_priv_key_enc_2: dto.sign_priv_key_enc_2,
           salt_mp: dto.salt_mp,
           salt_rc: dto.salt_rc,
           tree_enc_key: dto.tree_enc_key,
         } as any,
       });
 
+      const pkiUser = await tx.user.update({
+        where: { id: newUser.id },
+        data: buildLightPkiMaterial(newUser) as any,
+      });
+
       await tx.oidcConnection.create({
         data: {
-          userId: newUser.id,
+          userId: pkiUser.id,
           provider: payload.provider as OidcProvider,
           providerUserId: payload.providerUserId,
           email: payload.email,
           accessToken: payload.accessToken,
           refreshToken: payload.refreshToken,
+          driveScope: providerGrantsCloudStorage(payload.provider),
         },
       });
 
-      return newUser;
+      return pkiUser;
     });
 
     this.logger.log(`OIDC first-time setup completed for user: ${user.id}`);
@@ -473,9 +491,30 @@ export class AuthService {
   // Change password
 
   async changePassword(
-    _userId: string,
-    _dto: { auth_hash: string; priv_key_enc_1: string; salt_mp: string },
+    userId: string,
+    dto: {
+      auth_hash: string;
+      priv_key_enc_1: string;
+      salt_mp: string;
+      sign_priv_key_enc_1?: string;
+    },
   ): Promise<void> {
+    this.logger.log(`Changing master password for user: ${userId}`);
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('Utilisateur introuvable');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        auth_hash: dto.auth_hash,
+        priv_key_enc_1: dto.priv_key_enc_1,
+        sign_priv_key_enc_1: dto.sign_priv_key_enc_1,
+        salt_mp: dto.salt_mp,
+      },
+    });
+
+    this.logger.log(`Master password changed for user: ${userId}`);
     // TO BE DONE : Encrypt all files with the new key
   }
 
@@ -528,6 +567,7 @@ export class AuthService {
         email,
         accessToken,
         refreshToken,
+        driveScope: providerGrantsCloudStorage(provider),
       },
     });
 

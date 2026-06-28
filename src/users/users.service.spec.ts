@@ -11,6 +11,14 @@ import { CreateUserDto, UpdateUserDto } from '@blind-storage/types';
 import { UsersService } from './users.service';
 import type { UserModel } from '../generated/prisma/models/User';
 
+// La vérification TOTP (verifySync d'otplib) est mockée : on teste la logique
+// du service, pas l'algorithme TOTP lui-même.
+jest.mock('otplib', () => ({
+  verifySync: jest.fn(() => ({ valid: true })),
+  NobleCryptoPlugin: class {},
+  ScureBase32Plugin: class {},
+}));
+
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 const makeUser = (overrides: Partial<UserModel> = {}): UserModel =>
@@ -44,6 +52,7 @@ const createDto: CreateUserDto = {
 // ─── Mock PrismaService ───────────────────────────────────────────────────────
 
 const prismaMock = {
+  $transaction: jest.fn((queries: unknown[]) => Promise.all(queries)),
   user: {
     create: jest.fn(),
     findMany: jest.fn(),
@@ -51,6 +60,19 @@ const prismaMock = {
     findFirst: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+  },
+  file: {
+    findMany: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  filePermission: {
+    deleteMany: jest.fn(),
+  },
+  fileVersion: {
+    deleteMany: jest.fn(),
+  },
+  userTree: {
+    deleteMany: jest.fn(),
   },
   totpRecoveryCode: {
     deleteMany: jest.fn(),
@@ -83,6 +105,9 @@ describe('UsersService', () => {
     it('crée un utilisateur quand email et username sont libres', async () => {
       prismaMock.user.findFirst.mockResolvedValue(null);
       prismaMock.user.create.mockResolvedValue(makeUser());
+      prismaMock.user.update.mockResolvedValue(
+        makeUser({ key_fingerprint: 'fingerprint' }),
+      );
 
       const result = await service.create(createDto);
 
@@ -205,9 +230,34 @@ describe('UsersService', () => {
   describe('remove()', () => {
     it("supprime l'utilisateur", async () => {
       prismaMock.user.findUnique.mockResolvedValue(makeUser());
+      prismaMock.file.findMany.mockResolvedValue([{ id: 'file-1' }]);
+      prismaMock.filePermission.deleteMany.mockResolvedValue({ count: 2 });
+      prismaMock.fileVersion.deleteMany.mockResolvedValue({ count: 1 });
+      prismaMock.file.deleteMany.mockResolvedValue({ count: 1 });
+      prismaMock.userTree.deleteMany.mockResolvedValue({ count: 1 });
       prismaMock.user.delete.mockResolvedValue(makeUser());
 
       await expect(service.remove('uuid-1')).resolves.toBeUndefined();
+      expect(prismaMock.filePermission.deleteMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { fileId: { in: ['file-1'] } },
+            { userId: 'uuid-1' },
+            { grantedById: 'uuid-1' },
+          ],
+        },
+      });
+      expect(prismaMock.fileVersion.deleteMany).toHaveBeenCalledWith({
+        where: {
+          OR: [{ fileId: { in: ['file-1'] } }, { editedById: 'uuid-1' }],
+        },
+      });
+      expect(prismaMock.file.deleteMany).toHaveBeenCalledWith({
+        where: { ownerId: 'uuid-1' },
+      });
+      expect(prismaMock.userTree.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'uuid-1' },
+      });
       expect(prismaMock.user.delete).toHaveBeenCalledWith({
         where: { id: 'uuid-1' },
       });
@@ -233,8 +283,8 @@ describe('UsersService', () => {
 
       const { user, recoveryCodes } = await service.enableTotp(
         'uuid-1',
-        'JBSWY3DPEHPK3PXP',
-        '000000',
+        'SECRET123',
+        '123456',
       );
 
       expect(user.totpEnabled).toBe(true);
@@ -256,7 +306,7 @@ describe('UsersService', () => {
 
     it('lève NotFoundException si utilisateur absent', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
-      await expect(service.enableTotp('bad-id', 'S')).rejects.toThrow(
+      await expect(service.enableTotp('bad-id', 'S', '123456')).rejects.toThrow(
         NotFoundException,
       );
     });

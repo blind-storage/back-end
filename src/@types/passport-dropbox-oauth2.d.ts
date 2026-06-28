@@ -17,6 +17,7 @@ declare module 'passport-dropbox-oauth2' {
     clientID: string;
     clientSecret: string;
     callbackURL: string;
+    scope?: string[];
   }
 
   type VerifyCallback = (err: Error | null, user?: any) => void;

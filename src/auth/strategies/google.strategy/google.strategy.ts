@@ -6,6 +6,8 @@ import { Logger } from 'winston';
 import { PrismaService } from '@/prisma.service';
 import { OidcProvider } from '@blind-storage/types';
 
+const GOOGLE_DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
@@ -28,8 +30,11 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         (() => {
           throw new Error('GOOGLE_CALLBACK_URL is not defined');
         })(),
-      scope: ['email', 'profile'],
-    });
+      accessType: 'offline',
+      prompt: 'consent',
+      includeGrantedScopes: true,
+      scope: ['email', 'profile', GOOGLE_DRIVE_SCOPE],
+    } as any);
   }
 
   async validate(
@@ -100,7 +105,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
     await this.prisma.oidcConnection.update({
       where: { id: connection.id },
-      data: { accessToken, refreshToken, email },
+      data: {
+        email,
+        accessToken,
+        refreshToken: refreshToken ?? connection.refreshToken,
+        driveScope: true,
+      },
     });
 
     this.logger.info('Google authentication successful', {

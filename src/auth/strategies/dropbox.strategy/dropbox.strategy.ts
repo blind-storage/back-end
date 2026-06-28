@@ -6,6 +6,14 @@ import { Logger } from 'winston';
 import { PrismaService } from '@/prisma.service';
 import { OidcProvider } from '@blind-storage/types';
 
+const DROPBOX_STORAGE_SCOPES = [
+  'account_info.read',
+  'files.metadata.read',
+  'files.metadata.write',
+  'files.content.write',
+  'files.content.read',
+];
+
 @Injectable()
 export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
   constructor(
@@ -39,6 +47,10 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
       // Dropbox requires space-separated scopes; library default is comma
       scopeSeparator: ' ',
     } as any);
+  }
+
+  authorizationParams(): Record<string, string> {
+    return { token_access_type: 'offline' };
   }
 
   async validate(
@@ -113,7 +125,12 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
 
     await this.prisma.oidcConnection.update({
       where: { id: connection.id },
-      data: { accessToken, refreshToken, email },
+      data: {
+        email,
+        accessToken,
+        refreshToken: refreshToken ?? connection.refreshToken,
+        driveScope: true,
+      },
     });
 
     this.logger.info('Dropbox authentication successful', {
