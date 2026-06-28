@@ -38,12 +38,11 @@ export class PkiService {
       /\\n/g,
       '\n',
     );
-    this.caPublicKey = (process.env.CA_PUBLIC_KEY ?? '').replace(
-      /\\n/g,
-      '\n',
-    );
+    this.caPublicKey = (process.env.CA_PUBLIC_KEY ?? '').replace(/\\n/g, '\n');
     if (!this.caPrivateKey || !this.caPublicKey) {
-      this.logger.warn('CA_PRIVATE_KEY or CA_PUBLIC_KEY not set — PKI disabled');
+      this.logger.warn(
+        'CA_PRIVATE_KEY or CA_PUBLIC_KEY not set — PKI disabled',
+      );
     } else {
       this.logger.log('PKI configured and active');
     }
@@ -63,7 +62,10 @@ export class PkiService {
     const s = createSign('SHA256');
     s.update(payload);
     // ieee-p1363 = raw r||s (64 bytes for P-256), directly consumable by Web Crypto subtle.verify
-    return s.sign({ key: this.caPrivateKey, dsaEncoding: 'ieee-p1363' }, 'base64');
+    return s.sign(
+      { key: this.caPrivateKey, dsaEncoding: 'ieee-p1363' },
+      'base64',
+    );
   }
 
   issueCertificate(subject: {

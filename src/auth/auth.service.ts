@@ -481,7 +481,7 @@ export class AuthService {
               key_fingerprint: fingerprint,
             };
           })()
-        : buildLightPkiMaterial(newUser as any);
+        : buildLightPkiMaterial(newUser);
 
       const pkiUser = await tx.user.update({
         where: { id: newUser.id },

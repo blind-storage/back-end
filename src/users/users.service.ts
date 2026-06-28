@@ -119,19 +119,20 @@ export class UsersService {
 
       let pkiData: Record<string, unknown>;
       if (this.pkiService.isConfigured()) {
-        const { cert, signature, fingerprint } = this.pkiService.issueCertificate({
-          id: created.id,
-          username: created.username,
-          email: created.email,
-          pub_key: (created as any).pub_key,
-        });
+        const { cert, signature, fingerprint } =
+          this.pkiService.issueCertificate({
+            id: created.id,
+            username: created.username,
+            email: created.email,
+            pub_key: (created as any).pub_key,
+          });
         pkiData = {
           key_certificate: cert,
           key_certificate_signature: signature,
           key_fingerprint: fingerprint,
         };
       } else {
-        pkiData = buildLightPkiMaterial(created as any);
+        pkiData = buildLightPkiMaterial(created);
       }
 
       const user = await this.prisma.user.update({
