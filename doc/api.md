@@ -90,10 +90,10 @@ Retourné quand l'email OIDC correspond à un compte existant sans connexion OID
 POST /auth/login  →  { access_token }
 ```
 
-### Flux OIDC (Google / Rezel / Dropbox)
+### Flux OIDC (Google / Dropbox)
 
 ```
-1. Ouvrir  GET /auth/google  (ou /rezel, /dropbox)
+1. Ouvrir  GET /auth/google  (ou /dropbox)
            → redirect automatique vers le provider
 
 2. Callback → trois cas possibles :
@@ -160,22 +160,6 @@ Redirige le navigateur vers Google.
 ### `GET /auth/google/callback`
 
 Callback automatique après consentement Google. **Ne pas appeler directement.**
-
-**Réponse 200** : `AuthResponseDto` | `OidcPendingResponseDto` | `OidcLinkPendingResponseDto`
-
----
-
-### `GET /auth/rezel`
-
-Démarre le flux OIDC Rezel. Redirige vers le provider Rezel.
-
-**Auth** : aucune
-
----
-
-### `GET /auth/rezel/callback`
-
-Callback automatique Rezel. **Ne pas appeler directement.**
 
 **Réponse 200** : `AuthResponseDto` | `OidcPendingResponseDto` | `OidcLinkPendingResponseDto`
 
