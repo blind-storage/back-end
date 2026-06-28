@@ -29,7 +29,16 @@ export class DropboxStrategy extends PassportStrategy(Strategy, 'dropbox') {
         (() => {
           throw new Error('DROPBOX_CALLBACK_URL is not defined');
         })(),
-    });
+      scope: [
+        'account_info.read',
+        'files.metadata.read',
+        'files.metadata.write',
+        'files.content.read',
+        'files.content.write',
+      ],
+      // Dropbox requires space-separated scopes; library default is comma
+      scopeSeparator: ' ',
+    } as any);
   }
 
   async validate(
