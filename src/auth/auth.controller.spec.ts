@@ -10,7 +10,6 @@ import { AuthService } from './auth.service';
 import { GoogleAuthGuard } from './guards/google-auth/jwt-auth.guard';
 import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
-import { RezelAuthGuard } from './guards/rezel-auth/jwt-auth.guard';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -55,8 +54,6 @@ describe('AuthController', () => {
       .overrideGuard(JwtAuthGuard)
       .useValue(guardAllow)
       .overrideGuard(GoogleAuthGuard)
-      .useValue(guardAllow)
-      .overrideGuard(RezelAuthGuard)
       .useValue(guardAllow)
       .compile();
 
@@ -121,42 +118,6 @@ describe('AuthController', () => {
       const res = { redirect: jest.fn() } as any;
 
       controller.googleCallback({ user: pending }, res);
-
-      expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('setup_token=pending.jwt.token'),
-      );
-    });
-  });
-
-  // ── GET /auth/rezel/callback ────────────────────────────────────────────────
-
-  describe('rezelCallback()', () => {
-    it('redirige vers le frontend avec un token si le compte existe', () => {
-      authServiceMock.handleOidcCallback.mockReturnValue({
-        access_token: 'signed.jwt.token',
-      });
-      const res = { redirect: jest.fn() } as any;
-
-      controller.rezelCallback({ user: mockUser }, res);
-
-      expect(res.redirect).toHaveBeenCalledWith(
-        expect.stringContaining('token=signed.jwt.token'),
-      );
-    });
-
-    it('redirige avec un setup_token si premier accès', () => {
-      authServiceMock.handleOidcCallback.mockReturnValue(mockPendingResponse);
-      const pending = {
-        pendingSetup: true,
-        provider: OidcProvider.REZEL,
-        providerUserId: 'r1',
-        email: 'alice@rezel.net',
-        accessToken: 'token',
-        refreshToken: null,
-      };
-      const res = { redirect: jest.fn() } as any;
-
-      controller.rezelCallback({ user: pending }, res);
 
       expect(res.redirect).toHaveBeenCalledWith(
         expect.stringContaining('setup_token=pending.jwt.token'),
